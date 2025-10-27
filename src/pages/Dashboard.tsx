@@ -1,9 +1,12 @@
+import { useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { AssignmentCard } from "@/components/AssignmentCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Sparkles, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
 import { Assignment } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 // Sample data for demonstration
 const sampleAssignments: Assignment[] = [
@@ -40,6 +43,25 @@ const sampleAssignments: Assignment[] = [
 ];
 
 const Dashboard = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-screen">
+          <p>Loading...</p>
+        </div>
+      </Layout>
+    );
+  }
+
   const stats = [
     {
       label: "Active Assignments",

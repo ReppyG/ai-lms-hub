@@ -10,6 +10,7 @@ import AiTools from "./pages/AiTools";
 import Notes from "./pages/Notes";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +22,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
+          <Route path="/auth" element={<Auth />} />
           <Route path="/" element={<Dashboard />} />
           <Route path="/assignments" element={<Assignments />} />
           <Route path="/calendar" element={<Calendar />} />

@@ -1,21 +1,54 @@
+import { useEffect, useState } from "react";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { useToast } from "@/components/ui/use-toast";
 import { Settings as SettingsIcon, Link as LinkIcon } from "lucide-react";
-import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 const Settings = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [canvasUrl, setCanvasUrl] = useState("");
   const [apiToken, setApiToken] = useState("");
   const [sampleMode, setSampleMode] = useState(true);
 
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  useEffect(() => {
+    const savedUrl = localStorage.getItem("canvas_url");
+    const savedToken = localStorage.getItem("canvas_token");
+    if (savedUrl) setCanvasUrl(savedUrl);
+    if (savedToken) setApiToken(savedToken);
+  }, []);
+
   const handleSave = () => {
-    // TODO: Save settings to Lovable Cloud
-    console.log("Saving settings:", { canvasUrl, apiToken, sampleMode });
+    localStorage.setItem("canvas_url", canvasUrl);
+    localStorage.setItem("canvas_token", apiToken);
+    toast({
+      title: "Settings saved!",
+      description: "Your Canvas integration settings have been updated.",
+    });
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-screen">
+          <p>Loading...</p>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

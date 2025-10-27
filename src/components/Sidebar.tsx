@@ -9,7 +9,12 @@ import {
   GraduationCap
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/" },
@@ -23,6 +28,21 @@ const navItems = [
 
 export const Sidebar = () => {
   const location = useLocation();
+  const { user, signOut } = useAuth();
+  const [profile, setProfile] = useState<{ full_name: string; user_id: string; email: string } | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      supabase
+        .from("profiles")
+        .select("full_name, user_id, email")
+        .eq("id", user.id)
+        .single()
+        .then(({ data }) => {
+          if (data) setProfile(data);
+        });
+    }
+  }, [user]);
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 bg-sidebar border-r border-sidebar-border flex flex-col">
@@ -64,16 +84,28 @@ export const Sidebar = () => {
       </nav>
 
       {/* User Section */}
-      <div className="p-4 border-t border-sidebar-border">
+      <div className="p-4 border-t border-sidebar-border space-y-2">
         <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-sidebar-accent/30">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
-            S
+            {profile?.full_name?.[0]?.toUpperCase() || "U"}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">Student</p>
-            <p className="text-xs text-sidebar-foreground/60 truncate">student@edu.com</p>
+            <p className="text-sm font-medium text-sidebar-foreground truncate">
+              {profile?.full_name || "User"}
+            </p>
+            <p className="text-xs text-sidebar-foreground/60 truncate">
+              ID: {profile?.user_id || "Loading..."}
+            </p>
           </div>
         </div>
+        <Button
+          onClick={signOut}
+          variant="ghost"
+          className="w-full justify-start gap-2 text-sidebar-foreground/80 hover:text-sidebar-foreground"
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </Button>
       </div>
     </aside>
   );
