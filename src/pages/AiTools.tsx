@@ -1,17 +1,15 @@
+import { useState, useEffect } from "react";
 import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AIToolDialog } from "@/components/AIToolDialog";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import {
   Sparkles,
   FileText,
   MessageSquare,
   Clock,
-  Image,
-  Video,
-  Mic,
-  Wand2,
-  BookOpen,
   Brain,
-  Palette,
 } from "lucide-react";
 
 const aiTools = [
@@ -21,6 +19,7 @@ const aiTools = [
     description: "AI-powered personalized study schedules",
     color: "text-primary",
     bgColor: "bg-primary/10",
+    systemPrompt: "You are a study planning assistant. Create a detailed, personalized study plan based on the user's request. Include specific time blocks, subjects, and break periods. Make it realistic and achievable.",
   },
   {
     icon: FileText,
@@ -28,6 +27,7 @@ const aiTools = [
     description: "Quick summaries of lectures and readings",
     color: "text-secondary",
     bgColor: "bg-secondary/10",
+    systemPrompt: "You are a content summarization expert. Provide clear, concise summaries that capture the key points and main ideas. Use bullet points when appropriate and highlight important concepts.",
   },
   {
     icon: MessageSquare,
@@ -35,6 +35,7 @@ const aiTools = [
     description: "Ask questions about your coursework",
     color: "text-accent",
     bgColor: "bg-accent/10",
+    systemPrompt: "You are a helpful tutor who explains concepts clearly and patiently. Break down complex topics into understandable parts, provide examples, and encourage learning.",
   },
   {
     icon: Clock,
@@ -42,52 +43,32 @@ const aiTools = [
     description: "Predict how long assignments will take",
     color: "text-warning",
     bgColor: "bg-warning/10",
-  },
-  {
-    icon: Image,
-    title: "Image Analysis",
-    description: "Analyze diagrams and visual content",
-    color: "text-success",
-    bgColor: "bg-success/10",
-  },
-  {
-    icon: Video,
-    title: "Video Analysis",
-    description: "Extract key points from lecture videos",
-    color: "text-primary",
-    bgColor: "bg-primary/10",
-  },
-  {
-    icon: Palette,
-    title: "Image Generation",
-    description: "Create visual aids for presentations",
-    color: "text-secondary",
-    bgColor: "bg-secondary/10",
-  },
-  {
-    icon: Wand2,
-    title: "Image Editing",
-    description: "Edit and enhance your images",
-    color: "text-accent",
-    bgColor: "bg-accent/10",
-  },
-  {
-    icon: Mic,
-    title: "Voice Transcription",
-    description: "Convert speech to text notes",
-    color: "text-warning",
-    bgColor: "bg-warning/10",
-  },
-  {
-    icon: BookOpen,
-    title: "Text-to-Speech",
-    description: "Listen to your study materials",
-    color: "text-success",
-    bgColor: "bg-success/10",
+    systemPrompt: "You are a time estimation expert for academic work. Based on the assignment description, provide realistic time estimates broken down by task. Consider research, writing, editing, and review time.",
   },
 ];
 
 const AiTools = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+  const [selectedTool, setSelectedTool] = useState<typeof aiTools[0] | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center h-screen">
+          <p>Loading...</p>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <div className="p-8">
@@ -108,6 +89,10 @@ const AiTools = () => {
               <Card
                 key={tool.title}
                 className="cursor-pointer hover:shadow-lg transition-all border-border/50 hover:border-primary/50"
+                onClick={() => {
+                  setSelectedTool(tool);
+                  setDialogOpen(true);
+                }}
               >
                 <CardHeader>
                   <div className={`w-12 h-12 rounded-xl ${tool.bgColor} flex items-center justify-center mb-3`}>
@@ -120,6 +105,16 @@ const AiTools = () => {
             );
           })}
         </div>
+
+        {selectedTool && (
+          <AIToolDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            title={selectedTool.title}
+            description={selectedTool.description}
+            systemPrompt={selectedTool.systemPrompt}
+          />
+        )}
       </div>
     </Layout>
   );
