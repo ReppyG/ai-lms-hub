@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { Sidebar } from "./Sidebar";
+import { FloatingAIAssistant } from "./FloatingAIAssistant";
 
 interface LayoutProps {
   children: ReactNode;
@@ -12,6 +13,7 @@ export const Layout = ({ children }: LayoutProps) => {
       <main className="ml-64 min-h-screen">
         {children}
       </main>
+      <FloatingAIAssistant />
     </div>
   );
 };

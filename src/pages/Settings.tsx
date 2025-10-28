@@ -153,6 +153,42 @@ const Settings = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Subscription */}
+          <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-secondary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <SettingsIcon className="w-5 h-5 text-primary" />
+                Premium Subscription
+              </CardTitle>
+              <CardDescription>
+                Upgrade to unlock advanced AI features and unlimited access
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Current Plan</span>
+                  <span className="text-sm text-muted-foreground">Free</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">AI Credits</span>
+                  <span className="text-sm text-muted-foreground">Limited</span>
+                </div>
+              </div>
+              <Button 
+                className="w-full gradient-primary" 
+                onClick={() => {
+                  toast({
+                    title: "Coming Soon!",
+                    description: "Premium subscriptions will be available soon with unlimited AI access and advanced features.",
+                  });
+                }}
+              >
+                Upgrade to Premium
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </Layout>

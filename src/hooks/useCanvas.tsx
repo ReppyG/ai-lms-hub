@@ -37,7 +37,26 @@ export const useCanvas = () => {
         body: { canvasUrl, apiToken, action: "courses" },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching Canvas courses:", error);
+        toast({
+          title: "Canvas Connection Error",
+          description: "Please configure your Canvas URL and API token in Settings.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if the response indicates an error
+      if (data?.error) {
+        console.error("Canvas API error:", data.error);
+        toast({
+          title: "Canvas Error",
+          description: "Invalid Canvas credentials. Please check your settings.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       setCourses(data || []);
     } catch (error: any) {
@@ -65,7 +84,26 @@ export const useCanvas = () => {
         body: { canvasUrl, apiToken, action: "assignments" },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching Canvas assignments:", error);
+        toast({
+          title: "Canvas Connection Error",
+          description: "Please configure your Canvas URL and API token in Settings.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if the response indicates an error
+      if (data?.error) {
+        console.error("Canvas API error:", data.error);
+        toast({
+          title: "Canvas Error",
+          description: "Invalid Canvas credentials. Please check your settings.",
+          variant: "destructive",
+        });
+        return;
+      }
 
       setAssignments(data || []);
     } catch (error: any) {
