@@ -105,7 +105,10 @@ export const useCanvas = () => {
         return;
       }
 
-      setAssignments(data || []);
+      // Canvas todo endpoint returns array of objects with 'assignment' property
+      // Extract assignments from the todo items
+      const extractedAssignments = data?.map((item: any) => item.assignment || item) || [];
+      setAssignments(extractedAssignments);
     } catch (error: any) {
       toast({
         title: "Error fetching assignments",

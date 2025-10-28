@@ -23,7 +23,8 @@ serve(async (req) => {
         endpoint = "/api/v1/courses";
         break;
       case "assignments":
-        endpoint = "/api/v1/courses/self/assignments";
+        // Use the todo endpoint which returns all pending assignments across all courses
+        endpoint = "/api/v1/users/self/todo";
         break;
       default:
         throw new Error("Invalid action");

@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, X, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 
 export const FloatingAIAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
   const [response, setResponse] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [agentMode, setAgentMode] = useState(false);
   const { toast } = useToast();
 
   const handleSubmit = async () => {
@@ -78,6 +80,7 @@ export const FloatingAIAssistant = () => {
 
   return (
     <>
+      {/* Floating Button */}
       <Button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl gradient-primary z-50 hover:scale-110 transition-transform"
@@ -86,25 +89,99 @@ export const FloatingAIAssistant = () => {
         <Sparkles className="h-6 w-6" />
       </Button>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              Your Personal AI Assistant
-            </DialogTitle>
-            <DialogDescription>
-              Ask me anything! I can help explain lessons, summarize content, create study plans, estimate time, or answer any questions about your coursework.
-            </DialogDescription>
-          </DialogHeader>
+      {/* Darkened Backdrop Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
 
-          <div className="space-y-4">
-            <div className="space-y-2">
+      {/* Integrated Assistant Panel */}
+      {isOpen && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 ml-64 transition-all">
+          <div className="bg-card border-t border-border shadow-lg p-6 max-w-4xl mx-auto rounded-t-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full gradient-primary flex items-center justify-center">
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    Your Personal AI Assistant
+                    {agentMode && (
+                      <Badge variant="secondary" className="gap-1">
+                        <Zap className="h-3 w-3" />
+                        Agent Mode
+                      </Badge>
+                    )}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    Ask me anything about your coursework
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">Agent Mode</span>
+                  <Switch 
+                    checked={agentMode} 
+                    onCheckedChange={setAgentMode}
+                  />
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsOpen(false)}
+                  className="h-8 w-8"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Agent Mode Description */}
+            {agentMode && (
+              <div className="mb-4 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                <p className="text-sm text-primary flex items-center gap-2">
+                  <Zap className="h-4 w-4" />
+                  Premium Agent Mode: I can create assignments, organize your schedule, and perform background tasks automatically.
+                </p>
+              </div>
+            )}
+
+            {/* Response Area */}
+            {response && (
+              <div className="mb-4 bg-muted p-4 rounded-lg max-h-[200px] overflow-y-auto">
+                <p className="text-sm whitespace-pre-wrap">{response}</p>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {isLoading && !response && (
+              <div className="mb-4 flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            )}
+
+            {/* Input Area */}
+            <div className="space-y-3">
               <Textarea
-                placeholder="Ask me to explain a concept, summarize your notes, create a study plan, or help with any assignment..."
+                placeholder={
+                  agentMode
+                    ? "Tell me what task to complete (e.g., 'Create a study schedule for next week' or 'Organize my assignments by priority')..."
+                    : "Ask me to explain a concept, summarize your notes, or help with any assignment..."
+                }
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                className="min-h-[120px]"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit();
+                  }
+                }}
+                className="min-h-[100px] resize-none"
                 disabled={isLoading}
               />
               <Button
@@ -115,31 +192,19 @@ export const FloatingAIAssistant = () => {
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Thinking...
+                    {agentMode ? "Working on it..." : "Thinking..."}
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 mr-2" />
-                    Ask AI
+                    {agentMode ? <Zap className="w-4 h-4 mr-2" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                    {agentMode ? "Execute Task" : "Ask AI"}
                   </>
                 )}
               </Button>
             </div>
-
-            {response && (
-              <div className="bg-muted p-4 rounded-lg max-h-[300px] overflow-y-auto">
-                <p className="text-sm whitespace-pre-wrap">{response}</p>
-              </div>
-            )}
-
-            {isLoading && !response && (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-            )}
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </>
   );
 };
