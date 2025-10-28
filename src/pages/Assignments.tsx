@@ -5,14 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { useCanvas } from "@/hooks/useCanvas";
+import { useCanvasContext } from "@/contexts/CanvasContext";
 import { useNavigate } from "react-router-dom";
 import { Search, Filter, Calendar, Clock } from "lucide-react";
 
 const Assignments = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { assignments, courses, loading: canvasLoading } = useCanvas();
+  const { assignments, courses, loading: canvasLoading } = useCanvasContext();
   const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {

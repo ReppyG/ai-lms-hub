@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { CanvasProvider } from "@/contexts/CanvasContext";
 import Dashboard from "./pages/Dashboard";
 import Assignments from "./pages/Assignments";
 import Calendar from "./pages/Calendar";
@@ -21,17 +22,19 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/assignments" element={<Assignments />} />
-          <Route path="/calendar" element={<Calendar />} />
-          <Route path="/ai-tools" element={<AiTools />} />
-          <Route path="/notes" element={<Notes />} />
-          <Route path="/chat" element={<Chat />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <CanvasProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/assignments" element={<Assignments />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/ai-tools" element={<AiTools />} />
+            <Route path="/notes" element={<Notes />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </CanvasProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

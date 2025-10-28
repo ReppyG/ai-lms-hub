@@ -4,14 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
-import { useCanvas } from "@/hooks/useCanvas";
+import { useCanvasContext } from "@/contexts/CanvasContext";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 
 const Calendar = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const { assignments, loading: canvasLoading } = useCanvas();
+  const { assignments, loading: canvasLoading } = useCanvasContext();
   const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {

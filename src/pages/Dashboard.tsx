@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { Layout } from "@/components/Layout";
 import { AssignmentCard } from "@/components/AssignmentCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,44 +7,93 @@ import { Sparkles, TrendingUp, Clock, CheckCircle2 } from "lucide-react";
 import { Assignment } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-
-// Sample data for demonstration
-const sampleAssignments: Assignment[] = [
-  {
-    id: 1,
-    name: "Data Structures Final Project",
-    description: "Implement a balanced binary search tree",
-    due_at: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-    points_possible: 100,
-    course_id: 101,
-    courseName: "CS 201 - Data Structures",
-    status: "todo",
-  },
-  {
-    id: 2,
-    name: "Machine Learning Assignment 3",
-    description: "Neural network implementation",
-    due_at: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-    points_possible: 75,
-    course_id: 102,
-    courseName: "CS 301 - Machine Learning",
-    status: "upcoming",
-  },
-  {
-    id: 3,
-    name: "Database Design Quiz",
-    description: "SQL and normalization",
-    due_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    points_possible: 50,
-    course_id: 103,
-    courseName: "CS 250 - Database Systems",
-    status: "overdue",
-  },
-];
+import { useCanvasContext } from "@/contexts/CanvasContext";
+import { cn } from "@/lib/utils";
 
 const Dashboard = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const { assignments, courses, loading: canvasLoading } = useCanvasContext();
+
+  // Convert Canvas assignments to Assignment type and calculate stats
+  const convertedAssignments: Assignment[] = useMemo(() => {
+    return assignments.map((assignment) => {
+      const course = courses.find((c) => c.id === assignment.course_id);
+      const dueDate = assignment.due_at ? new Date(assignment.due_at) : null;
+      const now = new Date();
+      const daysUntil = dueDate ? Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+
+      let status: Assignment["status"] = "upcoming";
+      if (daysUntil !== null) {
+        if (daysUntil < 0) status = "overdue";
+        else if (daysUntil <= 2) status = "todo";
+      }
+
+      return {
+        id: assignment.id,
+        name: assignment.name,
+        description: assignment.description || "",
+        due_at: assignment.due_at,
+        points_possible: assignment.points_possible,
+        course_id: assignment.course_id,
+        courseName: course?.name || "Unknown Course",
+        status,
+      };
+    });
+  }, [assignments, courses]);
+
+  // Calculate real stats from Canvas data
+  const stats = useMemo(() => {
+    const now = new Date();
+    const activeAssignments = convertedAssignments.filter((a) => {
+      const dueDate = a.due_at ? new Date(a.due_at) : null;
+      return dueDate && dueDate > now;
+    }).length;
+
+    // For completed this week and average score, we'd need submission data
+    // For now, show placeholder or calculated data from what we have
+    return [
+      {
+        label: "Active Assignments",
+        value: activeAssignments.toString(),
+        icon: Clock,
+        color: "text-secondary",
+      },
+      {
+        label: "Total Courses",
+        value: courses.length.toString(),
+        icon: CheckCircle2,
+        color: "text-success",
+      },
+      {
+        label: "Due This Week",
+        value: convertedAssignments.filter((a) => {
+          const dueDate = a.due_at ? new Date(a.due_at) : null;
+          if (!dueDate) return false;
+          const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+          return dueDate <= weekFromNow && dueDate > now;
+        }).length.toString(),
+        icon: TrendingUp,
+        color: "text-primary",
+      },
+    ];
+  }, [convertedAssignments, courses]);
+
+  // Get urgent assignments (due within 3 days)
+  const urgentAssignments = useMemo(() => {
+    return convertedAssignments
+      .filter((a) => {
+        if (!a.due_at) return false;
+        const dueDate = new Date(a.due_at);
+        const daysUntil = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        return daysUntil >= 0 && daysUntil <= 3;
+      })
+      .sort((a, b) => {
+        if (!a.due_at || !b.due_at) return 0;
+        return new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
+      })
+      .slice(0, 6);
+  }, [convertedAssignments]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -52,7 +101,7 @@ const Dashboard = () => {
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
+  if (loading || canvasLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-screen">
@@ -61,27 +110,6 @@ const Dashboard = () => {
       </Layout>
     );
   }
-
-  const stats = [
-    {
-      label: "Active Assignments",
-      value: "8",
-      icon: Clock,
-      color: "text-secondary",
-    },
-    {
-      label: "Completed This Week",
-      value: "5",
-      icon: CheckCircle2,
-      color: "text-success",
-    },
-    {
-      label: "Average Score",
-      value: "92%",
-      icon: TrendingUp,
-      color: "text-primary",
-    },
-  ];
 
   return (
     <Layout>
@@ -126,13 +154,25 @@ const Dashboard = () => {
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold">Urgent Assignments</h2>
-            <Button variant="ghost">View All</Button>
+            <Button variant="ghost" onClick={() => navigate("/assignments")}>View All</Button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {sampleAssignments.map((assignment) => (
-              <AssignmentCard key={assignment.id} assignment={assignment} />
-            ))}
-          </div>
+          {urgentAssignments.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {urgentAssignments.map((assignment) => (
+                <AssignmentCard key={assignment.id} assignment={assignment} />
+              ))}
+            </div>
+          ) : (
+            <Card className="border-border/50">
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">
+                  {convertedAssignments.length === 0 
+                    ? "No assignments found. Configure Canvas in Settings to sync your data." 
+                    : "No urgent assignments. Great job staying on top of your work! 🎉"}
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Quick Actions */}
@@ -168,7 +208,3 @@ const Dashboard = () => {
 };
 
 export default Dashboard;
-
-function cn(...classes: string[]) {
-  return classes.filter(Boolean).join(" ");
-}
