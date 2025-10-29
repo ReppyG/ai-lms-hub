@@ -11,26 +11,72 @@ const logStep = (step: string, details?: any) => {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { taskType, prompt, context } = await req.json();
+    logStep("Request received", { method: req.method, url: req.url });
+
+    // Parse request body with error handling
+    let requestBody;
+    try {
+      const text = await req.text();
+      logStep("Request body received", { length: text.length });
+      requestBody = JSON.parse(text);
+    } catch (parseError) {
+      logStep("JSON parse error", { error: String(parseError) });
+      throw new Error("Invalid JSON in request body");
+    }
+
+    const { taskType, prompt, context } = requestBody;
+    
+    if (!taskType) {
+      throw new Error("taskType is required");
+    }
+    if (!prompt) {
+      throw new Error("prompt is required");
+    }
+    
     logStep("Received request", { taskType });
     
+    // Check authorization
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header");
+    if (!authHeader) {
+      throw new Error("No authorization header");
+    }
+    
+    // Check environment variables
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      logStep("Missing env vars", { 
+        hasUrl: !!supabaseUrl, 
+        hasServiceKey: !!supabaseServiceKey 
+      });
+      throw new Error("Missing Supabase configuration");
+    }
     
     const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      supabaseUrl,
+      supabaseServiceKey,
       { auth: { persistSession: false } }
     );
 
     const token = authHeader.replace("Bearer ", "");
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError || !user) throw new Error("Authentication failed");
+    
+    if (userError) {
+      logStep("Auth error", { error: userError.message });
+      throw new Error(`Authentication failed: ${userError.message}`);
+    }
+    
+    if (!user) {
+      throw new Error("Authentication failed: No user found");
+    }
+    
     logStep("User authenticated", { userId: user.id });
 
     // Create task record
@@ -46,7 +92,11 @@ serve(async (req) => {
       .select()
       .single();
 
-    if (taskError) throw taskError;
+    if (taskError) {
+      logStep("Task creation error", { error: taskError.message });
+      throw new Error(`Failed to create task: ${taskError.message}`);
+    }
+    
     logStep("Task created", { taskId: task.id });
 
     // Build system prompt based on task type
@@ -171,9 +221,12 @@ Format as structured markdown with clear sections.`;
         break;
     }
 
-    // Call Lovable AI
+    // Check for Lovable API key
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+    if (!LOVABLE_API_KEY) {
+      logStep("Missing LOVABLE_API_KEY");
+      throw new Error("LOVABLE_API_KEY not configured");
+    }
 
     logStep("Calling Lovable AI", { model: "google/gemini-2.5-flash" });
     
@@ -196,12 +249,18 @@ Format as structured markdown with clear sections.`;
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       logStep("AI API Error", { status: aiResponse.status, error: errorText });
-      throw new Error(`AI API error: ${aiResponse.status}`);
+      throw new Error(`AI API error: ${aiResponse.status} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
+    
+    if (!aiData.choices || !aiData.choices[0] || !aiData.choices[0].message) {
+      logStep("Invalid AI response structure", { aiData });
+      throw new Error("Invalid response from AI API");
+    }
+    
     const result = aiData.choices[0].message.content;
-    logStep("AI response received");
+    logStep("AI response received", { resultLength: result.length });
 
     // Try to parse as JSON for structured tasks
     let parsedResult;
@@ -221,7 +280,11 @@ Format as structured markdown with clear sections.`;
       })
       .eq('id', task.id);
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      logStep("Task update error", { error: updateError.message });
+      throw new Error(`Failed to update task: ${updateError.message}`);
+    }
+    
     logStep("Task completed successfully");
 
     return new Response(JSON.stringify({
@@ -235,9 +298,18 @@ Format as structured markdown with clear sections.`;
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR", { message: errorMessage });
+    const errorStack = error instanceof Error ? error.stack : undefined;
     
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    logStep("ERROR", { 
+      message: errorMessage,
+      stack: errorStack,
+      type: typeof error 
+    });
+    
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? errorStack : undefined
+    }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
