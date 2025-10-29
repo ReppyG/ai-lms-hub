@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_tasks: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          prompt: string
+          result: Json | null
+          scheduled_for: string | null
+          started_at: string | null
+          status: Database["public"]["Enums"]["agent_task_status"]
+          task_type: Database["public"]["Enums"]["agent_task_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          prompt: string
+          result?: Json | null
+          scheduled_for?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["agent_task_status"]
+          task_type: Database["public"]["Enums"]["agent_task_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          prompt?: string
+          result?: Json | null
+          scheduled_for?: string | null
+          started_at?: string | null
+          status?: Database["public"]["Enums"]["agent_task_status"]
+          task_type?: Database["public"]["Enums"]["agent_task_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contacts: {
         Row: {
           contact_id: string
@@ -122,6 +167,42 @@ export type Database = {
         }
         Relationships: []
       }
+      study_sessions: {
+        Row: {
+          ai_tools_used: string[] | null
+          assignment_name: string | null
+          course_name: string | null
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          notes: string | null
+          topics_covered: string[] | null
+          user_id: string
+        }
+        Insert: {
+          ai_tools_used?: string[] | null
+          assignment_name?: string | null
+          course_name?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          notes?: string | null
+          topics_covered?: string[] | null
+          user_id: string
+        }
+        Update: {
+          ai_tools_used?: string[] | null
+          assignment_name?: string | null
+          course_name?: string | null
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          notes?: string | null
+          topics_covered?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -130,7 +211,14 @@ export type Database = {
       generate_unique_user_id: { Args: never; Returns: string }
     }
     Enums: {
-      [_ in never]: never
+      agent_task_status: "pending" | "running" | "completed" | "failed"
+      agent_task_type:
+        | "study_plan"
+        | "summarize_notes"
+        | "generate_quiz"
+        | "solve_problem"
+        | "create_flashcards"
+        | "analyze_assignments"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -257,6 +345,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      agent_task_status: ["pending", "running", "completed", "failed"],
+      agent_task_type: [
+        "study_plan",
+        "summarize_notes",
+        "generate_quiz",
+        "solve_problem",
+        "create_flashcards",
+        "analyze_assignments",
+      ],
+    },
   },
 } as const

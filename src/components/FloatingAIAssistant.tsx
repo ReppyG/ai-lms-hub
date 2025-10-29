@@ -22,49 +22,71 @@ export const FloatingAIAssistant = () => {
     setResponse("");
 
     try {
-      const { data, error } = await supabase.functions.invoke("ai-chat", {
-        body: {
-          messages: [
-            {
-              role: "user",
-              content: input,
-            },
-          ],
-        },
-      });
+      // Agent mode uses the agent function for task execution
+      if (agentMode) {
+        const { data, error } = await supabase.functions.invoke('ai-agent', {
+          body: {
+            taskType: 'general_assistant',
+            prompt: input,
+          }
+        });
 
-      if (error) throw error;
+        if (error) throw error;
 
-      const reader = data.body?.getReader();
-      if (!reader) throw new Error("No response stream");
+        const resultText = typeof data.result === 'string' ? data.result : data.result.content;
+        setResponse(resultText);
+        toast({
+          title: "Task completed!",
+          description: "Check the Agent Dashboard for detailed results",
+        });
+        setInput("");
+      } else {
+        // Regular chat mode with streaming
+        const { data, error } = await supabase.functions.invoke("ai-chat", {
+          body: {
+            messages: [
+              {
+                role: "user",
+                content: input,
+              },
+            ],
+          },
+        });
 
-      const decoder = new TextDecoder();
-      let fullResponse = "";
+        if (error) throw error;
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        const reader = data.body?.getReader();
+        if (!reader) throw new Error("No response stream");
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n");
+        const decoder = new TextDecoder();
+        let fullResponse = "";
 
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const jsonStr = line.slice(6);
-            if (jsonStr === "[DONE]") continue;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-            try {
-              const parsed = JSON.parse(jsonStr);
-              const content = parsed.choices?.[0]?.delta?.content;
-              if (content) {
-                fullResponse += content;
-                setResponse(fullResponse);
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const jsonStr = line.slice(6);
+              if (jsonStr === "[DONE]") continue;
+
+              try {
+                const parsed = JSON.parse(jsonStr);
+                const content = parsed.choices?.[0]?.delta?.content;
+                if (content) {
+                  fullResponse += content;
+                  setResponse(fullResponse);
+                }
+              } catch (e) {
+                // Skip invalid JSON
               }
-            } catch (e) {
-              // Skip invalid JSON
             }
           }
         }
+        setInput("");
       }
     } catch (error: any) {
       console.error("AI chat error:", error);

@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Assignments from "./pages/Assignments";
 import Calendar from "./pages/Calendar";
 import AiTools from "./pages/AiTools";
+import AgentDashboard from "./pages/AgentDashboard";
 import Notes from "./pages/Notes";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/assignments" element={<Assignments />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/ai-tools" element={<AiTools />} />
+            <Route path="/agent" element={<AgentDashboard />} />
             <Route path="/notes" element={<Notes />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/settings" element={<Settings />} />
