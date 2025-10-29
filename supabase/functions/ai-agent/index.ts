@@ -52,6 +52,37 @@ serve(async (req) => {
     // Build system prompt based on task type
     let systemPrompt = "You are an AI study assistant for students.";
     let userPrompt = prompt;
+    
+    // Add Canvas context to system prompt if available
+    if (context?.assignments && context.assignments.length > 0) {
+      const upcomingAssignments = context.assignments
+        .filter((a: any) => a.due_at)
+        .sort((a: any, b: any) => new Date(a.due_at).getTime() - new Date(b.due_at).getTime())
+        .slice(0, 10);
+      
+      systemPrompt += "\n\nThe student's upcoming assignments:";
+      upcomingAssignments.forEach((assignment: any) => {
+        const course = context.courses?.find((c: any) => c.id === assignment.course_id);
+        const dueDate = new Date(assignment.due_at).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+        systemPrompt += `\n- "${assignment.name}" for ${course?.name || 'Unknown Course'} - Due: ${dueDate}${assignment.points_possible ? ` (${assignment.points_possible} points)` : ''}`;
+        if (assignment.description) {
+          systemPrompt += `\n  Description: ${assignment.description.substring(0, 150)}${assignment.description.length > 150 ? '...' : ''}`;
+        }
+      });
+    }
+    
+    if (context?.courses && context.courses.length > 0) {
+      systemPrompt += "\n\nThe student's enrolled courses:";
+      context.courses.forEach((course: any) => {
+        systemPrompt += `\n- ${course.name}${course.course_code ? ` (${course.course_code})` : ''}`;
+      });
+    }
 
     switch (taskType) {
       case 'study_plan':

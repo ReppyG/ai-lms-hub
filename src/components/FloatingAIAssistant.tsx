@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { useCanvasContext } from "@/contexts/CanvasContext";
 
 export const FloatingAIAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -14,6 +15,7 @@ export const FloatingAIAssistant = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [agentMode, setAgentMode] = useState(false);
   const { toast } = useToast();
+  const { courses, assignments } = useCanvasContext();
 
   const handleSubmit = async () => {
     if (!input.trim()) return;
@@ -28,6 +30,10 @@ export const FloatingAIAssistant = () => {
           body: {
             taskType: 'general_assistant',
             prompt: input,
+            context: {
+              courses,
+              assignments
+            }
           }
         });
 
@@ -50,6 +56,10 @@ export const FloatingAIAssistant = () => {
                 content: input,
               },
             ],
+            context: {
+              courses,
+              assignments
+            }
           },
         });
 
