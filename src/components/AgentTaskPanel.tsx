@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +28,7 @@ export function AgentTaskPanel() {
   const [selectedTask, setSelectedTask] = useState<AgentTask | null>(null);
   const [resultDialogOpen, setResultDialogOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const copyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -131,11 +132,30 @@ export function AgentTaskPanel() {
       await navigator.clipboard.writeText(text);
       setCopied(true);
       toast.success("Result copied to clipboard!");
-      setTimeout(() => setCopied(false), 2000);
+      
+      // Clear any existing timeout
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+      
+      // Set new timeout
+      copyTimeoutRef.current = setTimeout(() => {
+        setCopied(false);
+        copyTimeoutRef.current = null;
+      }, 2000);
     } catch (err) {
       toast.error("Failed to copy to clipboard");
     }
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) {
+        clearTimeout(copyTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const parseResultForDisplay = (result: any) => {
     const formattedResult = formatResult(result);
@@ -261,7 +281,7 @@ export function AgentTaskPanel() {
                 
                 <TabsContent value="formatted" className="mt-4">
                   <ScrollArea className="h-[55vh]">
-                    {displayData.type === 'json' ? (
+                    {displayData.type === 'json' && displayData.content && typeof displayData.content === 'object' ? (
                       <div className="space-y-3 pr-4">
                         {Object.entries(displayData.content).map(([key, value]) => (
                           <div key={key} className="border rounded-lg p-4 bg-card">
@@ -269,7 +289,7 @@ export function AgentTaskPanel() {
                               {key.replace(/_/g, ' ')}
                             </div>
                             <div className="text-sm">
-                              {typeof value === 'object' ? (
+                              {typeof value === 'object' && value !== null ? (
                                 <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
                                   {JSON.stringify(value, null, 2)}
                                 </pre>
