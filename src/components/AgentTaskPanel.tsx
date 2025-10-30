@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, CheckCircle2, XCircle, Clock, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface AgentTask {
   id: string;
@@ -23,6 +24,8 @@ export function AgentTaskPanel() {
   const { user } = useAuth();
   const [tasks, setTasks] = useState<AgentTask[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<AgentTask | null>(null);
+  const [resultDialogOpen, setResultDialogOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -97,10 +100,28 @@ export function AgentTaskPanel() {
 
   const viewResult = (task: AgentTask) => {
     if (!task.result) return;
-    
-    // Open result in a modal or navigate to a detailed view
-    console.log('Task result:', task.result);
-    toast.success("Result loaded - check console for details");
+    setSelectedTask(task);
+    setResultDialogOpen(true);
+  };
+
+  const formatResult = (result: any) => {
+    if (typeof result === 'string') {
+      return result;
+    }
+    if (result?.content) {
+      // Remove markdown code blocks if present
+      let content = result.content;
+      if (content.includes('```json')) {
+        content = content.replace(/```json\n/g, '').replace(/```/g, '');
+      }
+      try {
+        const parsed = JSON.parse(content);
+        return JSON.stringify(parsed, null, 2);
+      } catch {
+        return content;
+      }
+    }
+    return JSON.stringify(result, null, 2);
   };
 
   return (
@@ -170,6 +191,22 @@ export function AgentTaskPanel() {
           )}
         </ScrollArea>
       </CardContent>
+
+      <Dialog open={resultDialogOpen} onOpenChange={setResultDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>{selectedTask && formatTaskType(selectedTask.task_type)}</DialogTitle>
+            <DialogDescription>
+              {selectedTask?.prompt}
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="h-[60vh] pr-4">
+            <pre className="text-sm whitespace-pre-wrap bg-muted p-4 rounded-lg">
+              {selectedTask && formatResult(selectedTask.result)}
+            </pre>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

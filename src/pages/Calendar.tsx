@@ -146,7 +146,7 @@ const Calendar = () => {
                     isToday
                       ? 'border-primary bg-primary/10'
                       : 'border-border/50 hover:border-border hover:bg-muted/30'
-                  } cursor-pointer transition-all relative`}
+                  } transition-all relative`}
                 >
                   <div className={`text-sm font-medium mb-1 ${isToday && 'text-primary'}`}>
                     {day}
@@ -155,14 +155,18 @@ const Calendar = () => {
                     {dayAssignments.slice(0, 3).map((assignment) => (
                       <div
                         key={assignment.id}
-                        className={`text-xs px-1 py-0.5 rounded ${getColorForAssignment(assignment.due_at!)} text-white truncate`}
+                        className={`text-xs px-1 py-0.5 rounded ${getColorForAssignment(assignment.due_at!)} text-white truncate cursor-pointer hover:opacity-80 transition-opacity`}
                         title={assignment.name}
+                        onClick={() => navigate('/assignments', { state: { scrollToId: assignment.id } })}
                       >
                         {assignment.name}
                       </div>
                     ))}
                     {dayAssignments.length > 3 && (
-                      <div className="text-xs text-muted-foreground">
+                      <div 
+                        className="text-xs text-muted-foreground cursor-pointer hover:text-foreground"
+                        onClick={() => navigate('/assignments')}
+                      >
                         +{dayAssignments.length - 3} more
                       </div>
                     )}

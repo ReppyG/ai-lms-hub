@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,15 +6,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useCanvasContext } from "@/contexts/CanvasContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { Search, Calendar, Clock, ExternalLink } from "lucide-react";
 
 const Assignments = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { assignments, courses, loading: canvasLoading } = useCanvasContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [canvasUrl, setCanvasUrl] = useState("");
+  const assignmentRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   useEffect(() => {
     if (!loading && !user) {
@@ -28,6 +30,19 @@ const Assignments = () => {
       setCanvasUrl(url);
     }
   }, []);
+
+  useEffect(() => {
+    // Scroll to assignment if coming from calendar
+    const scrollToId = (location.state as any)?.scrollToId;
+    if (scrollToId && assignmentRefs.current[scrollToId]) {
+      setTimeout(() => {
+        assignmentRefs.current[scrollToId]?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }, 500);
+    }
+  }, [location.state, assignments]);
 
   const getCourseName = (courseId: number) => {
     const course = courses.find(c => c.id === courseId);
@@ -113,7 +128,11 @@ const Assignments = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {sortedAssignments.map((assignment) => (
-              <Card key={assignment.id} className="p-6 hover:shadow-lg transition-shadow">
+              <div 
+                key={assignment.id} 
+                ref={(el) => assignmentRefs.current[assignment.id] = el}
+              >
+                <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="space-y-3">
                   <div>
                     <h3 className="font-semibold text-lg mb-1">{assignment.name}</h3>
@@ -173,6 +192,7 @@ const Assignments = () => {
                   )}
                 </div>
               </Card>
+              </div>
             ))}
           </div>
         )}

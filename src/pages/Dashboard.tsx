@@ -179,21 +179,37 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4">
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4"
+              onClick={() => navigate("/agent")}
+            >
               <Sparkles className="w-5 h-5" />
               <span className="text-sm">Generate Study Plan</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4">
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4"
+              onClick={() => navigate("/ai-tools")}
+            >
               <Sparkles className="w-5 h-5" />
-              <span className="text-sm">Summarize Content</span>
+              <span className="text-sm">AI Tools</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4">
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4"
+              onClick={() => navigate("/chat")}
+            >
               <Sparkles className="w-5 h-5" />
               <span className="text-sm">AI Tutor Chat</span>
             </Button>
-            <Button variant="outline" className="h-auto flex-col gap-2 py-4">
+            <Button 
+              variant="outline" 
+              className="h-auto flex-col gap-2 py-4"
+              onClick={() => navigate("/agent")}
+            >
               <Sparkles className="w-5 h-5" />
-              <span className="text-sm">Estimate Time</span>
+              <span className="text-sm">AI Assistant</span>
             </Button>
           </CardContent>
         </Card>
