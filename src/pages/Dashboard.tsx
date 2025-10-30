@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Layout } from "@/components/Layout";
 import { AssignmentCard } from "@/components/AssignmentCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,20 @@ const Dashboard = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { assignments, courses, loading: canvasLoading } = useCanvasContext();
+  const [canvasUrl, setCanvasUrl] = useState("");
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  useEffect(() => {
+    const url = localStorage.getItem("canvas_url");
+    if (url) {
+      setCanvasUrl(url);
+    }
+  }, []);
 
   // Convert Canvas assignments to Assignment type and calculate stats
   const convertedAssignments: Assignment[] = useMemo(() => {
@@ -32,7 +46,7 @@ const Dashboard = () => {
       return {
         id: assignment.id,
         name: assignment.name,
-        description: assignment.description || "",
+        description: assignment.description,
         due_at: assignment.due_at,
         points_possible: assignment.points_possible,
         course_id: assignment.course_id,
@@ -42,64 +56,45 @@ const Dashboard = () => {
     });
   }, [assignments, courses]);
 
-  // Calculate real stats from Canvas data
   const stats = useMemo(() => {
-    const now = new Date();
-    const activeAssignments = convertedAssignments.filter((a) => {
-      const dueDate = a.due_at ? new Date(a.due_at) : null;
-      return dueDate && dueDate > now;
-    }).length;
+    const totalAssignments = convertedAssignments.length;
+    const completedCount = convertedAssignments.filter((a) => a.status === "completed").length;
+    const upcomingCount = convertedAssignments.filter(
+      (a) => a.status === "todo" || a.status === "upcoming"
+    ).length;
 
-    // For completed this week and average score, we'd need submission data
-    // For now, show placeholder or calculated data from what we have
     return [
       {
-        label: "Active Assignments",
-        value: activeAssignments.toString(),
-        icon: Clock,
-        color: "text-secondary",
-      },
-      {
-        label: "Total Courses",
-        value: courses.length.toString(),
-        icon: CheckCircle2,
-        color: "text-success",
-      },
-      {
-        label: "Due This Week",
-        value: convertedAssignments.filter((a) => {
-          const dueDate = a.due_at ? new Date(a.due_at) : null;
-          if (!dueDate) return false;
-          const weekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-          return dueDate <= weekFromNow && dueDate > now;
-        }).length.toString(),
+        label: "Total Assignments",
+        value: totalAssignments.toString(),
         icon: TrendingUp,
         color: "text-primary",
       },
+      {
+        label: "Upcoming",
+        value: upcomingCount.toString(),
+        icon: Clock,
+        color: "text-warning",
+      },
+      {
+        label: "Completed",
+        value: completedCount.toString(),
+        icon: CheckCircle2,
+        color: "text-success",
+      },
     ];
-  }, [convertedAssignments, courses]);
+  }, [convertedAssignments]);
 
-  // Get urgent assignments (due within 3 days)
   const urgentAssignments = useMemo(() => {
     return convertedAssignments
-      .filter((a) => {
-        if (!a.due_at) return false;
-        const dueDate = new Date(a.due_at);
-        const daysUntil = Math.ceil((dueDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-        return daysUntil >= 0 && daysUntil <= 3;
-      })
+      .filter((a) => a.status === "todo" || a.status === "overdue")
       .sort((a, b) => {
-        if (!a.due_at || !b.due_at) return 0;
+        if (!a.due_at) return 1;
+        if (!b.due_at) return -1;
         return new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
       })
       .slice(0, 6);
   }, [convertedAssignments]);
-
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    }
-  }, [user, loading, navigate]);
 
   if (loading || canvasLoading) {
     return (
@@ -159,7 +154,7 @@ const Dashboard = () => {
           {urgentAssignments.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {urgentAssignments.map((assignment) => (
-                <AssignmentCard key={assignment.id} assignment={assignment} />
+                <AssignmentCard key={assignment.id} assignment={assignment} canvasUrl={canvasUrl} />
               ))}
             </div>
           ) : (

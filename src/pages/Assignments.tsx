@@ -7,19 +7,27 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useCanvasContext } from "@/contexts/CanvasContext";
 import { useNavigate } from "react-router-dom";
-import { Search, Filter, Calendar, Clock } from "lucide-react";
+import { Search, Calendar, Clock, ExternalLink } from "lucide-react";
 
 const Assignments = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const { assignments, courses, loading: canvasLoading } = useCanvasContext();
   const [searchTerm, setSearchTerm] = useState("");
+  const [canvasUrl, setCanvasUrl] = useState("");
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    const url = localStorage.getItem("canvas_url");
+    if (url) {
+      setCanvasUrl(url);
+    }
+  }, []);
 
   const getCourseName = (courseId: number) => {
     const course = courses.find(c => c.id === courseId);
@@ -151,6 +159,18 @@ const Assignments = () => {
                       {assignment.points_possible} pts
                     </span>
                   </div>
+
+                  {canvasUrl && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="w-full mt-2"
+                      onClick={() => window.open(`${canvasUrl}/courses/${assignment.course_id}/assignments/${assignment.id}`, '_blank')}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      View in Canvas
+                    </Button>
+                  )}
                 </div>
               </Card>
             ))}
