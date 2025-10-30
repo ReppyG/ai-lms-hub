@@ -289,7 +289,7 @@ export function AgentTaskPanel() {
                               {key.replace(/_/g, ' ')}
                             </div>
                             <div className="text-sm">
-                              {typeof value === 'object' && value !== null ? (
+                              {value !== null && typeof value === 'object' ? (
                                 <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
                                   {JSON.stringify(value, null, 2)}
                                 </pre>
