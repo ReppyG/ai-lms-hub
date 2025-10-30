@@ -5,9 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, CheckCircle2, XCircle, Clock, Sparkles } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Clock, Sparkles, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AgentTask {
   id: string;
@@ -26,6 +27,7 @@ export function AgentTaskPanel() {
   const [loading, setLoading] = useState(false);
   const [selectedTask, setSelectedTask] = useState<AgentTask | null>(null);
   const [resultDialogOpen, setResultDialogOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -124,6 +126,27 @@ export function AgentTaskPanel() {
     return JSON.stringify(result, null, 2);
   };
 
+  const copyToClipboard = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success("Result copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast.error("Failed to copy to clipboard");
+    }
+  };
+
+  const parseResultForDisplay = (result: any) => {
+    const formattedResult = formatResult(result);
+    try {
+      const parsed = JSON.parse(formattedResult);
+      return { type: 'json', content: parsed, raw: formattedResult };
+    } catch {
+      return { type: 'text', content: formattedResult, raw: formattedResult };
+    }
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -193,18 +216,103 @@ export function AgentTaskPanel() {
       </CardContent>
 
       <Dialog open={resultDialogOpen} onOpenChange={setResultDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh]">
+        <DialogContent className="max-w-4xl max-h-[85vh]">
           <DialogHeader>
-            <DialogTitle>{selectedTask && formatTaskType(selectedTask.task_type)}</DialogTitle>
-            <DialogDescription>
-              {selectedTask?.prompt}
-            </DialogDescription>
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <DialogTitle className="text-xl flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  {selectedTask && formatTaskType(selectedTask.task_type)}
+                </DialogTitle>
+                <DialogDescription className="mt-2">
+                  {selectedTask?.prompt}
+                </DialogDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => selectedTask && copyToClipboard(parseResultForDisplay(selectedTask.result).raw)}
+                className="ml-4"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy
+                  </>
+                )}
+              </Button>
+            </div>
           </DialogHeader>
-          <ScrollArea className="h-[60vh] pr-4">
-            <pre className="text-sm whitespace-pre-wrap bg-muted p-4 rounded-lg">
-              {selectedTask && formatResult(selectedTask.result)}
-            </pre>
-          </ScrollArea>
+          
+          {selectedTask && (() => {
+            const displayData = parseResultForDisplay(selectedTask.result);
+            
+            return (
+              <Tabs defaultValue="formatted" className="mt-4">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="formatted">Formatted View</TabsTrigger>
+                  <TabsTrigger value="raw">Raw Data</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="formatted" className="mt-4">
+                  <ScrollArea className="h-[55vh]">
+                    {displayData.type === 'json' ? (
+                      <div className="space-y-3 pr-4">
+                        {Object.entries(displayData.content).map(([key, value]) => (
+                          <div key={key} className="border rounded-lg p-4 bg-card">
+                            <div className="font-semibold text-sm text-primary mb-2 capitalize">
+                              {key.replace(/_/g, ' ')}
+                            </div>
+                            <div className="text-sm">
+                              {typeof value === 'object' ? (
+                                <pre className="bg-muted p-3 rounded text-xs overflow-x-auto">
+                                  {JSON.stringify(value, null, 2)}
+                                </pre>
+                              ) : (
+                                <div className="whitespace-pre-wrap break-words">
+                                  {String(value)}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="prose prose-sm dark:prose-invert max-w-none pr-4">
+                        <div className="bg-muted p-4 rounded-lg whitespace-pre-wrap break-words">
+                          {displayData.content}
+                        </div>
+                      </div>
+                    )}
+                  </ScrollArea>
+                </TabsContent>
+                
+                <TabsContent value="raw" className="mt-4">
+                  <ScrollArea className="h-[55vh]">
+                    <pre className="text-xs whitespace-pre-wrap bg-muted p-4 rounded-lg font-mono pr-4">
+                      {displayData.raw}
+                    </pre>
+                  </ScrollArea>
+                </TabsContent>
+              </Tabs>
+            );
+          })()}
+          
+          <div className="flex items-center justify-between pt-4 border-t text-xs text-muted-foreground">
+            <span>
+              Created: {selectedTask && new Date(selectedTask.created_at).toLocaleString()}
+            </span>
+            {selectedTask?.completed_at && (
+              <span>
+                Completed: {new Date(selectedTask.completed_at).toLocaleString()}
+              </span>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </Card>
