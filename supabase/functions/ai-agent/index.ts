@@ -153,6 +153,27 @@ serve(async (req) => {
         }
         break;
 
+      case 'analyze':
+        systemPrompt = `You are an expert academic analyst. Analyze the assignment and provide comprehensive study notes, time estimates, or detailed breakdowns as requested. Format as structured markdown with clear sections and bullet points.`;
+        break;
+
+      case 'summarize':
+        systemPrompt = `You are an expert at summarizing academic content. Create clear, concise summaries with:
+- Key points and main ideas
+- Important details numbered
+- Action items if applicable
+Format as structured markdown.`;
+        break;
+
+      case 'outline':
+        systemPrompt = `You are an expert at creating essay and assignment outlines. Provide a detailed outline with:
+- Introduction section with thesis statement
+- Main body sections with supporting points
+- Conclusion section
+- Tips for developing each section
+Format as structured markdown with clear hierarchy.`;
+        break;
+
       case 'summarize_notes':
         systemPrompt = `You are an expert at summarizing study materials. Create clear, concise summaries with:
 - Key concepts and definitions
@@ -297,13 +318,25 @@ Format as structured markdown with clear sections.`;
     });
 
   } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
+    let errorMessage: string;
+    let errorStack: string | undefined;
+    
+    if (error instanceof Error) {
+      errorMessage = error.message;
+      errorStack = error.stack;
+    } else if (typeof error === 'object' && error !== null) {
+      errorMessage = JSON.stringify(error);
+      errorStack = undefined;
+    } else {
+      errorMessage = String(error);
+      errorStack = undefined;
+    }
     
     logStep("ERROR", { 
       message: errorMessage,
       stack: errorStack,
-      type: typeof error 
+      type: typeof error,
+      errorObject: error
     });
     
     return new Response(JSON.stringify({ 
