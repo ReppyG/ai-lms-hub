@@ -303,6 +303,9 @@ export type Database = {
         | "solve_problem"
         | "create_flashcards"
         | "analyze_assignments"
+        | "analyze"
+        | "summarize"
+        | "outline"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -438,6 +441,9 @@ export const Constants = {
         "solve_problem",
         "create_flashcards",
         "analyze_assignments",
+        "analyze",
+        "summarize",
+        "outline",
       ],
     },
   },
