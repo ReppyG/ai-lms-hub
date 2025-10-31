@@ -1,10 +1,10 @@
 project_id = "tijrizmmdaxkgotjgwwu"
 
 [functions.canvas-integration]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-chat]
-verify_jwt = false
+verify_jwt = true
 
 [functions.ai-agent]
 verify_jwt = false

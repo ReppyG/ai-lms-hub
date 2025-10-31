@@ -9,6 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Settings as SettingsIcon, Link as LinkIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Settings = () => {
   const { user, loading } = useAuth();
@@ -25,19 +26,49 @@ const Settings = () => {
   }, [user, loading, navigate]);
 
   useEffect(() => {
-    const savedUrl = localStorage.getItem("canvas_url");
-    const savedToken = localStorage.getItem("canvas_token");
-    if (savedUrl) setCanvasUrl(savedUrl);
-    if (savedToken) setApiToken(savedToken);
-  }, []);
+    const loadCanvasSettings = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from("canvas_credentials")
+        .select("canvas_url, api_token")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (data) {
+        setCanvasUrl(data.canvas_url);
+        setApiToken(data.api_token);
+      }
+    };
+    
+    loadCanvasSettings();
+  }, [user]);
 
-  const handleSave = () => {
-    localStorage.setItem("canvas_url", canvasUrl);
-    localStorage.setItem("canvas_token", apiToken);
-    toast({
-      title: "Settings saved!",
-      description: "Your Canvas integration settings have been updated.",
-    });
+  const handleSave = async () => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from("canvas_credentials")
+        .upsert({
+          user_id: user.id,
+          canvas_url: canvasUrl,
+          api_token: apiToken,
+        });
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Settings saved",
+        description: "Your Canvas credentials have been saved securely.",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to save Canvas credentials. Your API key may have expired or be invalid. Try reconfiguring your Canvas credentials or generating a new Canvas API key.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {

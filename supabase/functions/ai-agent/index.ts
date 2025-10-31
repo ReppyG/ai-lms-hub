@@ -308,7 +308,7 @@ Format as structured markdown with clear sections.`;
     
     return new Response(JSON.stringify({ 
       error: errorMessage,
-      details: process.env.NODE_ENV === 'development' ? errorStack : undefined
+      details: errorStack
     }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },

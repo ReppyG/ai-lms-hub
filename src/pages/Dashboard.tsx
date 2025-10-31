@@ -117,7 +117,7 @@ const Dashboard = () => {
               Here's what's happening with your courses today
             </p>
           </div>
-          <Button className="gradient-primary shadow-glow">
+          <Button className="gradient-primary shadow-glow" onClick={() => navigate("/pricing")}>
             <Sparkles className="w-4 h-4 mr-2" />
             AI Study Plan
           </Button>
@@ -179,10 +179,10 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Button 
+              <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
-              onClick={() => navigate("/agent")}
+              onClick={() => navigate("/pricing")}
             >
               <Sparkles className="w-5 h-5" />
               <span className="text-sm">Generate Study Plan</span>
@@ -206,7 +206,7 @@ const Dashboard = () => {
             <Button 
               variant="outline" 
               className="h-auto flex-col gap-2 py-4"
-              onClick={() => navigate("/agent")}
+              onClick={() => navigate("/pricing")}
             >
               <Sparkles className="w-5 h-5" />
               <span className="text-sm">AI Assistant</span>

@@ -4,10 +4,13 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/useAuth";
 import { useCanvasContext } from "@/contexts/CanvasContext";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Search, Calendar, Clock, ExternalLink } from "lucide-react";
+import { AssignmentActionsDropdown } from "@/components/AssignmentActionsDropdown";
+import { supabase } from "@/integrations/supabase/client";
 
 const Assignments = () => {
   const { user, loading } = useAuth();
@@ -16,6 +19,7 @@ const Assignments = () => {
   const { assignments, courses, loading: canvasLoading } = useCanvasContext();
   const [searchTerm, setSearchTerm] = useState("");
   const [canvasUrl, setCanvasUrl] = useState("");
+  const [completions, setCompletions] = useState<Record<string, boolean>>({});
   const assignmentRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   useEffect(() => {
@@ -25,11 +29,43 @@ const Assignments = () => {
   }, [user, loading, navigate]);
 
   useEffect(() => {
-    const url = localStorage.getItem("canvas_url");
-    if (url) {
-      setCanvasUrl(url);
-    }
-  }, []);
+    const loadCanvasUrl = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from("canvas_credentials")
+        .select("canvas_url")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (data) {
+        setCanvasUrl(data.canvas_url);
+      }
+    };
+    
+    loadCanvasUrl();
+  }, [user]);
+
+  useEffect(() => {
+    const loadCompletions = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from("assignment_completions")
+        .select("assignment_id, completed")
+        .eq("user_id", user.id);
+      
+      if (data) {
+        const completionsMap: Record<string, boolean> = {};
+        data.forEach((c: any) => {
+          completionsMap[c.assignment_id] = c.completed;
+        });
+        setCompletions(completionsMap);
+      }
+    };
+    
+    loadCompletions();
+  }, [user]);
 
   useEffect(() => {
     // Scroll to assignment if coming from calendar
@@ -134,11 +170,31 @@ const Assignments = () => {
               >
                 <Card className="p-6 hover:shadow-lg transition-shadow">
                 <div className="space-y-3">
-                  <div>
-                    <h3 className="font-semibold text-lg mb-1">{assignment.name}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {getCourseName(assignment.course_id)}
-                    </p>
+                  <div className="flex items-start gap-3">
+                    <Checkbox 
+                      checked={completions[assignment.id.toString()] || false}
+                      onCheckedChange={async (checked) => {
+                        if (!user) return;
+                        await supabase
+                          .from("assignment_completions")
+                          .upsert({
+                            user_id: user.id,
+                            assignment_id: assignment.id.toString(),
+                            completed: !!checked,
+                            completed_at: checked ? new Date().toISOString() : null,
+                          });
+                        setCompletions({...completions, [assignment.id.toString()]: !!checked});
+                      }}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <h3 className={`font-semibold text-lg mb-1 ${completions[assignment.id.toString()] ? 'line-through text-muted-foreground' : ''}`}>
+                        {assignment.name}
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {getCourseName(assignment.course_id)}
+                      </p>
+                    </div>
                   </div>
 
                   {assignment.description && (
@@ -190,6 +246,18 @@ const Assignments = () => {
                       View in Canvas
                     </Button>
                   )}
+                  
+                  <AssignmentActionsDropdown 
+                    assignment={{
+                      id: assignment.id,
+                      name: assignment.name,
+                      description: assignment.description,
+                      course_id: assignment.course_id
+                    }}
+                    onComplete={() => {
+                      setCompletions({...completions, [assignment.id.toString()]: true});
+                    }}
+                  />
                 </div>
               </Card>
               </div>

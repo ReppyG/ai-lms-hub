@@ -32,6 +32,8 @@ const Chat = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [messageInput, setMessageInput] = useState("");
   const [myUserId, setMyUserId] = useState("");
+  const [allMessages, setAllMessages] = useState<Message[]>([]);
+  const [pendingContacts, setPendingContacts] = useState<Contact[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -43,6 +45,7 @@ const Chat = () => {
     if (user) {
       loadContacts();
       loadMyUserId();
+      loadAllMessages();
     }
   }, [user]);
 
@@ -110,6 +113,43 @@ const Chat = () => {
     }));
 
     setContacts(contactsList);
+  };
+
+  const loadAllMessages = async () => {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*, sender:profiles!messages_sender_id_fkey(full_name, user_id)")
+      .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      toast({
+        title: "Error loading messages",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setAllMessages(data || []);
+    
+    // Find pending contacts (people who messaged you but aren't in contacts)
+    const senderIds = new Set(data?.filter((m: any) => m.recipient_id === user.id).map((m: any) => m.sender_id));
+    const contactIds = new Set(contacts.map(c => c.id));
+    const pendingIds = Array.from(senderIds).filter(id => !contactIds.has(id as string));
+    
+    if (pendingIds.length > 0) {
+      const { data: pendingData } = await supabase
+        .from("profiles")
+        .select("id, full_name, user_id")
+        .in("id", pendingIds);
+      
+      if (pendingData) {
+        setPendingContacts(pendingData as Contact[]);
+      }
+    }
   };
 
   const loadMessages = async () => {
@@ -187,25 +227,50 @@ const Chat = () => {
           <Card className="col-span-1 p-4 overflow-y-auto">
             <h3 className="font-semibold mb-4">Contacts</h3>
             <div className="space-y-2">
-              {contacts.length === 0 ? (
+              {pendingContacts.length > 0 && (
+                <>
+                  <p className="text-xs text-muted-foreground font-semibold mb-2">Pending Messages</p>
+                  {pendingContacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      onClick={() => setSelectedContact(contact)}
+                      className={`p-3 rounded-lg cursor-pointer transition-colors border-2 border-warning ${
+                        selectedContact?.id === contact.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted hover:bg-muted/80"
+                      }`}
+                    >
+                      <p className="font-medium">{contact.full_name}</p>
+                      <p className="text-xs opacity-70">ID: {contact.user_id}</p>
+                      <p className="text-xs text-warning">New message!</p>
+                    </div>
+                  ))}
+                  <div className="my-3 border-t" />
+                </>
+              )}
+              
+              {contacts.length === 0 && pendingContacts.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   No contacts yet. Add a friend using their ID!
                 </p>
               ) : (
-                contacts.map((contact) => (
-                  <div
-                    key={contact.id}
-                    onClick={() => setSelectedContact(contact)}
-                    className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                      selectedContact?.id === contact.id
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted hover:bg-muted/80"
-                    }`}
-                  >
-                    <p className="font-medium">{contact.full_name}</p>
-                    <p className="text-xs opacity-70">ID: {contact.user_id}</p>
-                  </div>
-                ))
+                <>
+                  {contacts.length > 0 && <p className="text-xs text-muted-foreground font-semibold mb-2">My Contacts</p>}
+                  {contacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      onClick={() => setSelectedContact(contact)}
+                      className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                        selectedContact?.id === contact.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted hover:bg-muted/80"
+                      }`}
+                    >
+                      <p className="font-medium">{contact.full_name}</p>
+                      <p className="text-xs opacity-70">ID: {contact.user_id}</p>
+                    </div>
+                  ))}
+                </>
               )}
             </div>
           </Card>

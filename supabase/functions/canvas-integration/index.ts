@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -11,7 +12,36 @@ serve(async (req) => {
   }
 
   try {
-    const { canvasUrl, apiToken, action } = await req.json();
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('No authorization header');
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) {
+      throw new Error('Unauthorized');
+    }
+
+    const { action } = await req.json();
+
+    // Get credentials from database
+    const { data: credentials, error: credError } = await supabaseClient
+      .from('canvas_credentials')
+      .select('canvas_url, api_token')
+      .eq('user_id', user.id)
+      .single();
+
+    if (credError || !credentials) {
+      throw new Error('Canvas credentials not found. Please configure in Settings.');
+    }
+
+    const { canvas_url: canvasUrl, api_token: apiToken } = credentials;
 
     if (!canvasUrl || !apiToken) {
       throw new Error("Canvas URL and API token are required");
