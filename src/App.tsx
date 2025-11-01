@@ -15,6 +15,10 @@ import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import Pricing from "./pages/Pricing";
+import PremiumChat from "./pages/PremiumChat";
+import Workflows from "./pages/Workflows";
+import PremiumSettings from "./pages/PremiumSettings";
+import Analytics from "./pages/Analytics";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +40,10 @@ const App = () => (
             <Route path="/chat" element={<Chat />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/premium-chat" element={<PremiumChat />} />
+            <Route path="/workflows" element={<Workflows />} />
+            <Route path="/premium-settings" element={<PremiumSettings />} />
+            <Route path="/analytics" element={<Analytics />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </CanvasProvider>

@@ -11,3 +11,15 @@ verify_jwt = false
 
 [functions.weekly-digest]
 verify_jwt = false
+
+[functions.premium-chat]
+verify_jwt = true
+
+[functions.generate-image]
+verify_jwt = true
+
+[functions.workflow-executor]
+verify_jwt = true
+
+[functions.task-scheduler]
+verify_jwt = false

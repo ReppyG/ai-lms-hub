@@ -59,6 +59,45 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_workflows: {
+        Row: {
+          created_at: string
+          description: string | null
+          enabled: boolean
+          id: string
+          last_run_at: string | null
+          name: string
+          schedule_cron: string | null
+          steps: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          last_run_at?: string | null
+          name: string
+          schedule_cron?: string | null
+          steps?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          last_run_at?: string | null
+          name?: string
+          schedule_cron?: string | null
+          steps?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       assignment_completions: {
         Row: {
           assignment_id: string
@@ -145,6 +184,151 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_bookmarks: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          message_id: string | null
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_bookmarks_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_bookmarks_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          archived: boolean
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          created_at?: string
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived?: boolean
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      generated_images: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          id: string
+          image_data: string
+          model: string | null
+          prompt: string
+          user_id: string
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          image_data: string
+          model?: string | null
+          prompt: string
+          user_id: string
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          image_data?: string
+          model?: string | null
+          prompt?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generated_images_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
         ]
@@ -251,6 +435,51 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_tasks: {
+        Row: {
+          created_at: string
+          description: string | null
+          enabled: boolean
+          id: string
+          last_run_at: string | null
+          name: string
+          next_run_at: string | null
+          parameters: Json | null
+          schedule_cron: string
+          task_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          last_run_at?: string | null
+          name: string
+          next_run_at?: string | null
+          parameters?: Json | null
+          schedule_cron: string
+          task_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          id?: string
+          last_run_at?: string | null
+          name?: string
+          next_run_at?: string | null
+          parameters?: Json | null
+          schedule_cron?: string
+          task_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       study_sessions: {
         Row: {
           ai_tools_used: string[] | null
@@ -287,12 +516,153 @@ export type Database = {
         }
         Relationships: []
       }
+      usage_analytics: {
+        Row: {
+          action_type: string
+          cost: number | null
+          created_at: string
+          id: string
+          metadata: Json | null
+          tokens_used: number | null
+          user_id: string
+        }
+        Insert: {
+          action_type: string
+          cost?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          tokens_used?: number | null
+          user_id: string
+        }
+        Update: {
+          action_type?: string
+          cost?: number | null
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          tokens_used?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_preferences: {
+        Row: {
+          created_at: string
+          custom_instructions: string | null
+          enable_memory: boolean | null
+          enable_proactive_suggestions: boolean | null
+          id: string
+          max_tokens: number | null
+          preferred_model: string | null
+          preferred_voice: string | null
+          temperature: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          custom_instructions?: string | null
+          enable_memory?: boolean | null
+          enable_proactive_suggestions?: boolean | null
+          id?: string
+          max_tokens?: number | null
+          preferred_model?: string | null
+          preferred_voice?: string | null
+          temperature?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          custom_instructions?: string | null
+          enable_memory?: boolean | null
+          enable_proactive_suggestions?: boolean | null
+          id?: string
+          max_tokens?: number | null
+          preferred_model?: string | null
+          preferred_voice?: string | null
+          temperature?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      workflow_runs: {
+        Row: {
+          completed_at: string | null
+          error_message: string | null
+          id: string
+          result: Json | null
+          started_at: string
+          status: string
+          user_id: string
+          workflow_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          result?: Json | null
+          started_at?: string
+          status?: string
+          user_id: string
+          workflow_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          error_message?: string | null
+          id?: string
+          result?: Json | null
+          started_at?: string
+          status?: string
+          user_id?: string
+          workflow_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workflow_runs_workflow_id_fkey"
+            columns: ["workflow_id"]
+            isOneToOne: false
+            referencedRelation: "ai_workflows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
       generate_unique_user_id: { Args: never; Returns: string }
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
     }
     Enums: {
       agent_task_status: "pending" | "running" | "completed" | "failed"
@@ -306,6 +676,7 @@ export type Database = {
         | "analyze"
         | "summarize"
         | "outline"
+      user_role: "free" | "premium" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -445,6 +816,7 @@ export const Constants = {
         "summarize",
         "outline",
       ],
+      user_role: ["free", "premium", "admin"],
     },
   },
 } as const

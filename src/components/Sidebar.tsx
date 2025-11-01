@@ -6,7 +6,10 @@ import {
   Settings, 
   MessageSquare,
   FileText,
-  GraduationCap
+  GraduationCap,
+  Workflow,
+  BarChart3,
+  Zap
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,6 +27,9 @@ const navItems = [
   { icon: GraduationCap, label: "AI Agent", path: "/agent" },
   { icon: FileText, label: "Notes", path: "/notes" },
   { icon: MessageSquare, label: "Chat", path: "/chat" },
+  { icon: Zap, label: "Premium Chat", path: "/premium-chat", premium: true },
+  { icon: Workflow, label: "Workflows", path: "/workflows", premium: true },
+  { icon: BarChart3, label: "Analytics", path: "/analytics", premium: true },
   { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
