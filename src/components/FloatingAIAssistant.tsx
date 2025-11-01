@@ -140,7 +140,7 @@ export const FloatingAIAssistant = () => {
       {/* Enhanced Floating Button */}
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-glow-lg z-50 group relative overflow-hidden"
+        className="fixed bottom-20 right-8 h-14 w-14 rounded-full shadow-glow-lg z-50 group relative overflow-hidden"
         size="icon"
       >
         <div className="absolute inset-0 gradient-primary animate-pulse-glow" />
