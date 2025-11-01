@@ -10,6 +10,7 @@ import { Settings as SettingsIcon, Link as LinkIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const Settings = () => {
   const { user, loading } = useAuth();
@@ -151,6 +152,27 @@ const Settings = () => {
               <Button onClick={handleSave} className="w-full gradient-primary">
                 Save Canvas Settings
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Appearance Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Appearance</CardTitle>
+              <CardDescription>
+                Customize the look and feel of your dashboard
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                <div className="space-y-0.5">
+                  <Label>Theme</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Switch between light and dark mode
+                  </p>
+                </div>
+                <ThemeToggle />
+              </div>
             </CardContent>
           </Card>
 
