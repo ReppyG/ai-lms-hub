@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useCanvasContext } from "@/contexts/CanvasContext";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 
 const Calendar = () => {
@@ -77,23 +78,35 @@ const Calendar = () => {
   return (
     <Layout>
       <div className="p-8">
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex items-center justify-between animate-fade-in">
           <div>
-            <h1 className="text-4xl font-bold mb-2 flex items-center gap-3">
-              <CalendarIcon className="w-8 h-8" />
+            <h1 className="text-5xl font-bold mb-2 flex items-center gap-3 text-gradient">
+              <div className="p-3 rounded-2xl gradient-primary shadow-glow-lg animate-pulse-glow">
+                <CalendarIcon className="w-8 h-8 text-white" />
+              </div>
               Calendar
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-lg text-muted-foreground">
               View your assignments and events in calendar view
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={previousMonth}>
-              <ChevronLeft className="w-4 h-4" />
+          <div className="flex items-center gap-3 glass-card p-2 rounded-xl shadow-md">
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={previousMonth}
+              className="hover:bg-primary hover:text-primary-foreground transition-all hover:scale-110"
+            >
+              <ChevronLeft className="w-5 h-5" />
             </Button>
-            <span className="text-lg font-semibold px-4">{monthName}</span>
-            <Button variant="outline" size="icon" onClick={nextMonth}>
-              <ChevronRight className="w-4 h-4" />
+            <span className="text-xl font-bold px-6">{monthName}</span>
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={nextMonth}
+              className="hover:bg-primary hover:text-primary-foreground transition-all hover:scale-110"
+            >
+              <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
         </div>
@@ -120,10 +133,10 @@ const Calendar = () => {
           </div>
         </div>
 
-        <Card className="p-6">
-          <div className="grid grid-cols-7 gap-4 mb-4">
+        <Card className="p-6 glass-card shadow-lg">
+          <div className="grid grid-cols-7 gap-4 mb-6">
             {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-              <div key={day} className="text-center font-semibold text-sm text-muted-foreground">
+              <div key={day} className="text-center font-bold text-base text-muted-foreground tracking-wide">
                 {day}
               </div>
             ))}
@@ -142,32 +155,55 @@ const Calendar = () => {
               return (
                 <div
                   key={day}
-                  className={`aspect-square p-2 rounded-lg border ${
+                  className={cn(
+                    "aspect-square p-3 rounded-xl border-2 transition-all duration-300 relative group cursor-pointer",
                     isToday
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border/50 hover:border-border hover:bg-muted/30'
-                  } transition-all relative`}
+                      ? 'border-primary bg-gradient-to-br from-primary/20 to-primary/5 shadow-glow'
+                      : dayAssignments.length > 0
+                      ? 'border-border/50 hover:border-primary/50 hover:bg-muted/50 hover-lift'
+                      : 'border-border/30 hover:border-border hover:bg-muted/30'
+                  )}
                 >
-                  <div className={`text-sm font-medium mb-1 ${isToday && 'text-primary'}`}>
+                  {isToday && (
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-primary/10 to-transparent animate-pulse" />
+                  )}
+                  <div className={cn(
+                    "text-base font-bold mb-2 relative",
+                    isToday ? 'text-primary' : 'text-foreground'
+                  )}>
                     {day}
+                    {dayAssignments.length > 0 && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold shadow-glow animate-pulse">
+                        {dayAssignments.length}
+                      </div>
+                    )}
                   </div>
-                  <div className="space-y-1 overflow-hidden">
-                    {dayAssignments.slice(0, 3).map((assignment) => (
+                  <div className="space-y-1 overflow-hidden relative">
+                    {dayAssignments.slice(0, 2).map((assignment) => (
                       <div
                         key={assignment.id}
-                        className={`text-xs px-1 py-0.5 rounded ${getColorForAssignment(assignment.due_at!)} text-white truncate cursor-pointer hover:opacity-80 transition-opacity`}
+                        className={cn(
+                          "text-xs px-2 py-1 rounded-lg text-white font-medium truncate cursor-pointer transition-all hover:scale-105 shadow-sm",
+                          getColorForAssignment(assignment.due_at!)
+                        )}
                         title={assignment.name}
-                        onClick={() => navigate('/assignments', { state: { scrollToId: assignment.id } })}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/assignments', { state: { scrollToId: assignment.id } });
+                        }}
                       >
                         {assignment.name}
                       </div>
                     ))}
-                    {dayAssignments.length > 3 && (
+                    {dayAssignments.length > 2 && (
                       <div 
-                        className="text-xs text-muted-foreground cursor-pointer hover:text-foreground"
-                        onClick={() => navigate('/assignments')}
+                        className="text-xs text-primary font-semibold cursor-pointer hover:text-primary-dark transition-colors"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate('/assignments');
+                        }}
                       >
-                        +{dayAssignments.length - 3} more
+                        +{dayAssignments.length - 2} more →
                       </div>
                     )}
                   </div>

@@ -56,18 +56,18 @@ export const Sidebar = () => {
       {/* Logo */}
       <div className="p-6 border-b border-sidebar-border">
         <Link to="/" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow group-hover:scale-105 transition-transform">
+          <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shadow-glow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 animate-pulse-glow">
             <GraduationCap className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-sidebar-foreground">Canvas Pro</h1>
+            <h1 className="text-xl font-bold text-sidebar-foreground group-hover:text-gradient transition-colors">Canvas Pro</h1>
             <p className="text-xs text-sidebar-foreground/60">AI Study Assistant</p>
           </div>
         </Link>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
@@ -77,14 +77,25 @@ export const Sidebar = () => {
               key={item.path}
               to={item.path}
               className={cn(
-                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all",
+                "flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group relative overflow-hidden",
                 isActive
-                  ? "bg-sidebar-accent text-sidebar-primary font-medium shadow-sm"
-                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
+                  ? "bg-sidebar-accent text-sidebar-primary font-medium shadow-md border-l-4 border-primary"
+                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground hover:translate-x-1"
               )}
             >
-              <Icon className="w-5 h-5" />
-              <span>{item.label}</span>
+              {isActive && (
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-transparent animate-shimmer" />
+              )}
+              <Icon className={cn(
+                "w-5 h-5 transition-all duration-200",
+                isActive ? "scale-110" : "group-hover:scale-110 group-hover:rotate-12"
+              )} />
+              <span className="relative">{item.label}</span>
+              {item.premium && (
+                <span className="ml-auto px-2 py-0.5 text-xs font-semibold bg-gradient-accent text-white rounded-full animate-pulse-glow">
+                  PRO
+                </span>
+              )}
             </Link>
           );
         })}
@@ -92,8 +103,8 @@ export const Sidebar = () => {
 
       {/* User Section */}
       <div className="p-4 border-t border-sidebar-border space-y-2">
-        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-sidebar-accent/30">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold text-sm">
+        <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-sidebar-accent/30 hover:bg-sidebar-accent/50 transition-colors group">
+          <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-semibold text-sm shadow-glow group-hover:scale-110 transition-transform">
             {profile?.full_name?.[0]?.toUpperCase() || "U"}
           </div>
           <div className="flex-1 min-w-0">
@@ -108,9 +119,9 @@ export const Sidebar = () => {
         <Button
           onClick={signOut}
           variant="ghost"
-          className="w-full justify-start gap-2 text-sidebar-foreground/80 hover:text-sidebar-foreground"
+          className="w-full justify-start gap-2 text-sidebar-foreground/80 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-all group"
         >
-          <LogOut className="w-4 h-4" />
+          <LogOut className="w-4 h-4 group-hover:rotate-12 transition-transform" />
           Sign Out
         </Button>
       </div>

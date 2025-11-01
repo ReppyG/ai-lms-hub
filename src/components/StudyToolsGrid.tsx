@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { supabase } from "@/integrations/supabase/client";
 import { useCanvasContext } from "@/contexts/CanvasContext";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import { 
   BookOpen, 
   FileText, 
@@ -131,25 +132,35 @@ export function StudyToolsGrid() {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {studyTools.map((tool) => {
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {studyTools.map((tool, index) => {
           const Icon = tool.icon;
           return (
             <Card 
               key={tool.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
+              className="cursor-pointer hover-lift glass-card group relative overflow-hidden"
               onClick={() => setSelectedTool(tool)}
+              style={{ animationDelay: `${index * 75}ms` }}
             >
-              <CardHeader>
-                <div className={`w-12 h-12 rounded-lg ${tool.color} flex items-center justify-center mb-3`}>
-                  <Icon className="h-6 w-6" />
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              <CardHeader className="relative">
+                <div className={cn(
+                  "w-16 h-16 rounded-2xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300",
+                  tool.color
+                )}>
+                  <Icon className="h-8 w-8" />
                 </div>
-                <CardTitle className="text-lg">{tool.title}</CardTitle>
-                <CardDescription>{tool.description}</CardDescription>
+                <CardTitle className="text-xl group-hover:text-primary transition-colors">{tool.title}</CardTitle>
+                <CardDescription className="text-base">{tool.description}</CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full">
-                  Try Now
+              <CardContent className="relative">
+                <Button 
+                  variant="outline" 
+                  className="w-full group/btn hover:bg-primary hover:text-primary-foreground transition-all duration-300 shadow-sm"
+                >
+                  <span className="group-hover/btn:scale-110 transition-transform inline-block">Try Now</span>
+                  <span className="ml-2 group-hover/btn:translate-x-1 transition-transform inline-block">→</span>
                 </Button>
               </CardContent>
             </Card>

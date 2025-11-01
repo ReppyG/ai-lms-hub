@@ -9,6 +9,7 @@ import { AddContactDialog } from "@/components/AddContactDialog";
 import { MessageSquare, Send } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { cn } from "@/lib/utils";
 
 interface Contact {
   id: string;
@@ -283,22 +284,28 @@ const Chat = () => {
                   <p className="text-xs text-muted-foreground">ID: {selectedContact.user_id}</p>
                 </div>
                 <div className="flex-1 p-6 overflow-y-auto space-y-4">
-                  {messages.map((message) => (
+                  {messages.map((message, index) => (
                     <div
                       key={message.id}
-                      className={`flex ${
+                      className={cn(
+                        "flex animate-fade-in",
                         message.sender_id === user?.id ? "justify-end" : "justify-start"
-                      }`}
+                      )}
+                      style={{ animationDelay: `${index * 50}ms` }}
                     >
                       <div
-                        className={`max-w-[70%] rounded-lg p-3 ${
+                        className={cn(
+                          "max-w-[70%] rounded-2xl p-4 shadow-md hover-scale group relative",
                           message.sender_id === user?.id
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted"
-                        }`}
+                            ? "gradient-primary text-white"
+                            : "glass-card"
+                        )}
                       >
-                        <p className="text-sm">{message.content}</p>
-                        <p className="text-xs opacity-70 mt-1">
+                        <p className="text-sm leading-relaxed">{message.content}</p>
+                        <p className={cn(
+                          "text-xs mt-2 opacity-0 group-hover:opacity-70 transition-opacity",
+                          message.sender_id === user?.id ? "text-white/90" : "text-muted-foreground"
+                        )}>
                           {new Date(message.created_at).toLocaleTimeString()}
                         </p>
                       </div>

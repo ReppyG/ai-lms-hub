@@ -74,48 +74,63 @@ export default function Analytics() {
 
   return (
     <Layout>
-      <div className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-6">Usage Analytics</h1>
+      <div className="container mx-auto p-8 space-y-8 animate-fade-in">
+        <div>
+          <h1 className="text-5xl font-bold mb-2 text-gradient">Usage Analytics</h1>
+          <p className="text-lg text-muted-foreground">Track your premium features usage and activity</p>
+        </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
+        {/* Enhanced Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <Card className="p-6 hover-lift glass-card group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center justify-between relative">
               <div>
-                <p className="text-sm text-muted-foreground">Messages</p>
-                <h3 className="text-2xl font-bold">{stats.totalMessages}</h3>
+                <p className="text-sm text-muted-foreground mb-1 tracking-wide uppercase font-medium">Messages</p>
+                <h3 className="text-4xl font-bold text-gradient">{stats.totalMessages}</h3>
               </div>
-              <MessageSquare className="h-8 w-8 text-primary" />
+              <div className="p-4 rounded-2xl gradient-primary shadow-glow-lg group-hover:scale-110 group-hover:rotate-12 transition-all">
+                <MessageSquare className="h-8 w-8 text-white" />
+              </div>
             </div>
           </Card>
 
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
+          <Card className="p-6 hover-lift glass-card group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center justify-between relative">
               <div>
-                <p className="text-sm text-muted-foreground">Images</p>
-                <h3 className="text-2xl font-bold">{stats.totalImages}</h3>
+                <p className="text-sm text-muted-foreground mb-1 tracking-wide uppercase font-medium">Images</p>
+                <h3 className="text-4xl font-bold text-gradient">{stats.totalImages}</h3>
               </div>
-              <Image className="h-8 w-8 text-primary" />
+              <div className="p-4 rounded-2xl gradient-secondary shadow-glow-lg group-hover:scale-110 group-hover:rotate-12 transition-all">
+                <Image className="h-8 w-8 text-white" />
+              </div>
             </div>
           </Card>
 
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
+          <Card className="p-6 hover-lift glass-card group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center justify-between relative">
               <div>
-                <p className="text-sm text-muted-foreground">Workflows</p>
-                <h3 className="text-2xl font-bold">{stats.totalWorkflows}</h3>
+                <p className="text-sm text-muted-foreground mb-1 tracking-wide uppercase font-medium">Workflows</p>
+                <h3 className="text-4xl font-bold text-gradient">{stats.totalWorkflows}</h3>
               </div>
-              <Workflow className="h-8 w-8 text-primary" />
+              <div className="p-4 rounded-2xl gradient-accent shadow-glow-lg group-hover:scale-110 group-hover:rotate-12 transition-all">
+                <Workflow className="h-8 w-8 text-white" />
+              </div>
             </div>
           </Card>
 
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
+          <Card className="p-6 hover-lift glass-card group relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="flex items-center justify-between relative">
               <div>
-                <p className="text-sm text-muted-foreground">Tasks</p>
-                <h3 className="text-2xl font-bold">{stats.totalTasks}</h3>
+                <p className="text-sm text-muted-foreground mb-1 tracking-wide uppercase font-medium">Tasks</p>
+                <h3 className="text-4xl font-bold text-gradient">{stats.totalTasks}</h3>
               </div>
-              <Calendar className="h-8 w-8 text-primary" />
+              <div className="p-4 rounded-2xl gradient-success shadow-glow-lg group-hover:scale-110 group-hover:rotate-12 transition-all">
+                <Calendar className="h-8 w-8 text-white" />
+              </div>
             </div>
           </Card>
         </div>
