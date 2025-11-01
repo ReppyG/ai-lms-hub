@@ -18,29 +18,41 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
+    // Extract and validate Authorization header
+    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new Error('Unauthorized');
+    }
+    const token = authHeader.replace('Bearer ', '');
+
+    // Create supabase client acting as the user (RLS honored)
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: `Bearer ${token}` },
         },
       }
     );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
+    // Decode JWT locally to get the user id (verify_jwt=true already validated the token)
+    let userId = '';
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      userId = payload.sub as string;
+    } catch (_) {
       throw new Error('Unauthorized');
     }
 
     const { conversationId, message, stream = true } = await req.json();
-    console.log('Premium chat request:', { conversationId, userId: user.id, stream });
+    console.log('Premium chat request:', { conversationId, userId, stream });
 
     // Get user preferences
     const { data: preferences } = await supabaseClient
       .from('user_preferences')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single();
 
     const model = preferences?.preferred_model || 'google/gemini-2.5-flash';
@@ -72,7 +84,7 @@ serve(async (req) => {
       .from('conversation_messages')
       .insert({
         conversation_id: conversationId,
-        user_id: user.id,
+        user_id: userId,
         role: 'user',
         content: message
       })
@@ -103,7 +115,7 @@ serve(async (req) => {
 
     // Track usage
     supabaseClient.from('usage_analytics').insert({
-      user_id: user.id,
+      user_id: userId,
       action_type: 'premium_chat',
       metadata: { model, conversationId }
     }).then();
@@ -121,7 +133,7 @@ serve(async (req) => {
         .from('conversation_messages')
         .insert({
           conversation_id: conversationId,
-          user_id: user.id,
+          user_id: userId,
           role: 'assistant',
           content: assistantMessage
         });
