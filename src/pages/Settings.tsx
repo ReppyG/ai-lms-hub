@@ -11,6 +11,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { CanvasApiInstructions } from "@/components/CanvasApiInstructions";
 
 const Settings = () => {
   const { user, loading } = useAuth();
@@ -133,6 +134,7 @@ const Settings = () => {
                 <p className="text-xs text-muted-foreground">
                   Generate a token from Canvas Account → Settings → New Access Token
                 </p>
+                <CanvasApiInstructions />
               </div>
 
               <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
