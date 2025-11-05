@@ -7,6 +7,7 @@ import { Mic, Square, Play, Pause, Loader2, Sparkles, FileText, Wand2 } from "lu
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { v4 as uuidv4 } from 'uuid';
 
 interface Note {
   id: string;
@@ -73,12 +74,11 @@ export const NoteDialog = ({ open, onOpenChange, note, onSave }: NoteDialogProps
 
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
-        const url = URL.createObjectURL(audioBlob);
-        setAudioUrl(url);
-        setDuration(Math.floor((Date.now() - startTimeRef.current) / 1000));
+        const recordingDuration = Math.floor((Date.now() - startTimeRef.current) / 1000);
+        setDuration(recordingDuration);
         
-        // Upload to storage
-        const fileName = `${user?.id}/${Date.now()}.webm`;
+        // Upload to storage with UUID filename
+        const fileName = `${user?.id}/${uuidv4()}.webm`;
         const { error: uploadError } = await supabase.storage
           .from("recordings")
           .upload(fileName, audioBlob);
@@ -89,11 +89,18 @@ export const NoteDialog = ({ open, onOpenChange, note, onSave }: NoteDialogProps
           return;
         }
 
-        const { data: { publicUrl } } = supabase.storage
+        // Get signed URL (1 hour expiry)
+        const { data: urlData, error: urlError } = await supabase.storage
           .from("recordings")
-          .getPublicUrl(fileName);
+          .createSignedUrl(fileName, 3600);
 
-        setAudioUrl(publicUrl);
+        if (urlError) {
+          console.error("URL error:", urlError);
+          toast.error("Failed to get recording URL");
+          return;
+        }
+
+        setAudioUrl(urlData.signedUrl);
       };
 
       startTimeRef.current = Date.now();
@@ -115,16 +122,36 @@ export const NoteDialog = ({ open, onOpenChange, note, onSave }: NoteDialogProps
     }
   };
 
-  const togglePlayback = () => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio(audioUrl || undefined);
-      audioRef.current.onended = () => setIsPlaying(false);
-    }
-
+  const togglePlayback = async () => {
     if (isPlaying) {
-      audioRef.current.pause();
+      audioRef.current?.pause();
       setIsPlaying(false);
     } else {
+      // Refresh signed URL if needed
+      if (note?.audio_url && audioUrl) {
+        const pathMatch = audioUrl.match(/sign\/recordings\/(.+)\?/);
+        if (pathMatch) {
+          const { data: urlData, error } = await supabase.storage
+            .from("recordings")
+            .createSignedUrl(pathMatch[1], 3600);
+          
+          if (!error && urlData) {
+            if (audioRef.current) {
+              audioRef.current.src = urlData.signedUrl;
+            } else {
+              audioRef.current = new Audio(urlData.signedUrl);
+              audioRef.current.onended = () => setIsPlaying(false);
+            }
+            setAudioUrl(urlData.signedUrl);
+          }
+        }
+      }
+
+      if (!audioRef.current) {
+        audioRef.current = new Audio(audioUrl || undefined);
+        audioRef.current.onended = () => setIsPlaying(false);
+      }
+      
       audioRef.current.play();
       setIsPlaying(true);
     }

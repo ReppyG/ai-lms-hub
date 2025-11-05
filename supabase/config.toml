@@ -7,7 +7,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.ai-agent]
-verify_jwt = false
+verify_jwt = true
 
 [functions.weekly-digest]
 verify_jwt = false
