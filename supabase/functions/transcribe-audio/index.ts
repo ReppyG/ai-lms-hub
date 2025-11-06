@@ -96,25 +96,25 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a professional transcription assistant. Transcribe the audio content EXACTLY as spoken. Include proper punctuation, paragraph breaks, and formatting. If this is a lecture, use headings and bullet points. Only provide the transcription - no comments or explanations."
+            content: "You are an expert transcription assistant. Your ONLY job is to transcribe the audio content word-for-word. Do NOT summarize, do NOT add commentary, do NOT make up content if you cannot hear clearly - just write '[inaudible]'. Transcribe EXACTLY what is said with proper punctuation and paragraph breaks."
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Transcribe this audio recording with accurate punctuation and formatting:"
+                text: "Transcribe this audio recording:"
               },
               {
-                type: "audio_url",
-                audio_url: {
-                  url: audioUrl
+                type: "audio",
+                audio: {
+                  data: audioBase64,
+                  format: "webm"
                 }
               }
             ]
           }
         ],
-        temperature: 0.1,
         max_tokens: 4096
       }),
     });
