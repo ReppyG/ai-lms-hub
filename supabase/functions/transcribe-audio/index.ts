@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.7.1";
+import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -77,21 +78,26 @@ serve(async (req) => {
     else if (contentType.includes('webm') || audioUrl.includes('.webm')) audioFormat = 'webm';
     console.log("Detected audio format:", audioFormat, "(content-type:", contentType, ")");
 
-    // Convert to base64 efficiently for large files
+    // Convert to base64 using Deno std to avoid corruption and check payload size
     const audioBuffer = await audioBlob.arrayBuffer();
     const bytes = new Uint8Array(audioBuffer);
-    
-    // Use TextDecoder approach for better performance
-    const chunks = [];
-    const chunkSize = 0x8000; // 32KB chunks
-    
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      const chunk = bytes.slice(i, i + chunkSize);
-      chunks.push(String.fromCharCode.apply(null, Array.from(chunk)));
+
+    // Guard against oversized payloads (keep well below ~20MB request limit)
+    const MAX_BYTES = 12 * 1024 * 1024; // 12 MB binary -> ~16MB base64 + JSON overhead
+    if (bytes.length > MAX_BYTES) {
+      console.warn("Audio too large for inline transcription:", bytes.length, "bytes");
+      return new Response(
+        JSON.stringify({
+          error: "Audio too large for transcription. Please record a shorter clip or lower recording quality.",
+          limit_mb: 12,
+          success: false,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 413 }
+      );
     }
-    
-    const audioBase64 = btoa(chunks.join(''));
-    console.log("Base64 encoded, length:", audioBase64.length);
+
+    const audioBase64 = base64Encode(audioBuffer);
+    console.log("Base64 encoded (std), length:", audioBase64.length);
 
     // Call Lovable AI with Gemini for transcription
     console.log("Calling Gemini API...");
@@ -104,12 +110,12 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-pro",
-        temperature: 0,
+        temperature: 0.1, // small randomness helps ASR on noisy inputs
         top_p: 0.1,
         messages: [
           {
             role: "system",
-            content: "You are an expert transcription assistant. Your ONLY job is to transcribe the audio content word-for-word. Do NOT summarize, do NOT add commentary, do NOT invent words. If something is unclear, output [inaudible]. Keep speaker words verbatim with proper punctuation and paragraph breaks."
+            content: "You are an expert transcription assistant. Only transcribe the spoken words verbatim. Do NOT summarize, translate, or add commentary. If audio is unclear, output [inaudible]. If the audio seems cut off, output [truncated]. Preserve punctuation, capitalization, and paragraph breaks. Keep the original language."
           },
           {
             role: "user",
@@ -126,6 +132,18 @@ serve(async (req) => {
     if (!transcriptionResponse.ok) {
       const errorText = await transcriptionResponse.text();
       console.error("Gemini error:", transcriptionResponse.status, errorText);
+      if (transcriptionResponse.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Rate limits exceeded by AI gateway. Please try again shortly.", success: false }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 429 }
+        );
+      }
+      if (transcriptionResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Payment required for AI usage. Please add credits to your workspace.", success: false }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 402 }
+        );
+      }
       throw new Error(`Transcription API error: ${transcriptionResponse.status}`);
     }
 
