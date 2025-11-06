@@ -12,6 +12,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log("=== Transcription Request Started ===");
+    
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       throw new Error("No authorization header");
@@ -34,21 +36,55 @@ serve(async (req) => {
       throw new Error("Invalid user token");
     }
 
+    console.log("User authenticated:", user.id);
+
     const { audioUrl, noteId } = await req.json();
 
-    console.log("Transcribing audio from:", audioUrl);
+    if (!audioUrl || !noteId) {
+      throw new Error("Missing audioUrl or noteId");
+    }
 
-    // Download audio file
-    const audioResponse = await fetch(audioUrl);
+    console.log("Downloading audio from:", audioUrl);
+    console.log("Note ID:", noteId);
+
+    // Download audio file with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+    const audioResponse = await fetch(audioUrl, { signal: controller.signal });
+    clearTimeout(timeoutId);
+
     if (!audioResponse.ok) {
-      throw new Error("Failed to download audio");
+      throw new Error(`Download failed: ${audioResponse.status}`);
     }
 
     const audioBlob = await audioResponse.blob();
-    const audioBuffer = await audioBlob.arrayBuffer();
-    const audioBase64 = btoa(String.fromCharCode(...new Uint8Array(audioBuffer)));
+    const audioSize = audioBlob.size;
+    console.log("Audio downloaded:", audioSize, "bytes");
 
-    // Use Gemini for transcription
+    if (audioSize === 0) {
+      throw new Error("Audio file is empty");
+    }
+
+    // Convert to base64 efficiently for large files
+    const audioBuffer = await audioBlob.arrayBuffer();
+    const bytes = new Uint8Array(audioBuffer);
+    
+    // Use TextDecoder approach for better performance
+    const chunks = [];
+    const chunkSize = 0x8000; // 32KB chunks
+    
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.slice(i, i + chunkSize);
+      chunks.push(String.fromCharCode.apply(null, Array.from(chunk)));
+    }
+    
+    const audioBase64 = btoa(chunks.join(''));
+    console.log("Base64 encoded, length:", audioBase64.length);
+
+    // Call Lovable AI with Gemini for transcription
+    console.log("Calling Gemini API...");
+    
     const transcriptionResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -60,36 +96,49 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: "You are a transcription assistant. Transcribe the audio accurately, including proper punctuation and formatting. If you hear a lecture or teaching, organize it into clear sections."
+            content: "You are a professional transcription assistant. Transcribe the audio content EXACTLY as spoken. Include proper punctuation, paragraph breaks, and formatting. If this is a lecture, use headings and bullet points. Only provide the transcription - no comments or explanations."
           },
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: "Please transcribe this audio recording:"
+                text: "Transcribe this audio recording with accurate punctuation and formatting:"
               },
               {
-                type: "audio",
-                audio: {
-                  data: audioBase64,
-                  format: "webm"
+                type: "audio_url",
+                audio_url: {
+                  url: audioUrl
                 }
               }
             ]
           }
-        ]
+        ],
+        temperature: 0.1,
+        max_tokens: 4096
       }),
     });
 
     if (!transcriptionResponse.ok) {
       const errorText = await transcriptionResponse.text();
-      console.error("Transcription error:", errorText);
-      throw new Error("Transcription failed");
+      console.error("Gemini error:", transcriptionResponse.status, errorText);
+      throw new Error(`Transcription API error: ${transcriptionResponse.status}`);
     }
 
     const transcriptionData = await transcriptionResponse.json();
-    const transcription = transcriptionData.choices[0].message.content;
+    console.log("Gemini response received");
+
+    if (!transcriptionData.choices?.[0]?.message?.content) {
+      console.error("Invalid response:", JSON.stringify(transcriptionData));
+      throw new Error("No transcription in response");
+    }
+
+    const transcription = transcriptionData.choices[0].message.content.trim();
+    console.log("Transcription length:", transcription.length, "characters");
+
+    if (transcription.length < 3) {
+      throw new Error("Transcription too short - audio may be silent or corrupted");
+    }
 
     // Update note with transcription
     const { error: updateError } = await supabase
@@ -99,12 +148,18 @@ serve(async (req) => {
       .eq("user_id", user.id);
 
     if (updateError) {
-      console.error("Update error:", updateError);
-      throw new Error("Failed to update note");
+      console.error("Database update error:", updateError);
+      throw new Error("Failed to save transcription");
     }
 
+    console.log("=== Transcription Complete ===");
+
     return new Response(
-      JSON.stringify({ transcription }),
+      JSON.stringify({ 
+        transcription,
+        length: transcription.length,
+        success: true
+      }),
       { 
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200 
@@ -112,10 +167,18 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error("Error:", error);
+    console.error("=== Transcription Error ===");
+    console.error(error);
+    
+    let errorMessage = "Transcription failed";
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+    
     return new Response(
       JSON.stringify({ 
-        error: error instanceof Error ? error.message : "Unknown error" 
+        error: errorMessage,
+        success: false
       }),
       { 
         headers: { ...corsHeaders, "Content-Type": "application/json" },

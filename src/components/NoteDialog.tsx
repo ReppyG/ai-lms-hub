@@ -158,21 +158,38 @@ export const NoteDialog = ({ open, onOpenChange, note, onSave }: NoteDialogProps
   };
 
   const transcribeAudio = async (noteId: string) => {
-    if (!audioUrl) return;
+    if (!audioUrl) {
+      toast.error("No audio to transcribe");
+      return;
+    }
 
     setIsTranscribing(true);
+    toast.info("Transcribing audio... This may take 30-60 seconds");
+    
     try {
+      console.log("Starting transcription for note:", noteId);
+      console.log("Audio URL:", audioUrl);
+      
       const { data, error } = await supabase.functions.invoke("transcribe-audio", {
         body: { audioUrl, noteId },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Transcription error:", error);
+        throw error;
+      }
 
+      if (!data?.transcription) {
+        throw new Error("No transcription returned from server");
+      }
+
+      console.log("Transcription successful:", data.transcription.substring(0, 100));
       setTranscription(data.transcription);
-      toast.success("Audio transcribed successfully!");
-    } catch (error) {
-      console.error("Transcription error:", error);
-      toast.error("Failed to transcribe audio");
+      toast.success(`Transcription complete! (${data.length || data.transcription.length} characters)`);
+    } catch (error: any) {
+      console.error("Transcription failed:", error);
+      const errorMsg = error?.message || "Failed to transcribe audio. Please try again.";
+      toast.error(errorMsg);
     } finally {
       setIsTranscribing(false);
     }
