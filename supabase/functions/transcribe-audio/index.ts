@@ -66,6 +66,17 @@ serve(async (req) => {
       throw new Error("Audio file is empty");
     }
 
+    // Detect audio format from headers, blob type or URL extension
+    const contentType = audioResponse.headers.get('content-type') || audioBlob.type || '';
+    let audioFormat = 'webm';
+    if (contentType.includes('mp3') || audioUrl.includes('.mp3')) audioFormat = 'mp3';
+    else if (contentType.includes('wav') || audioUrl.includes('.wav')) audioFormat = 'wav';
+    else if (contentType.includes('ogg') || audioUrl.includes('.ogg')) audioFormat = 'ogg';
+    else if (contentType.includes('m4a') || audioUrl.includes('.m4a')) audioFormat = 'm4a';
+    else if (contentType.includes('mp4') || audioUrl.includes('.mp4')) audioFormat = 'mp4';
+    else if (contentType.includes('webm') || audioUrl.includes('.webm')) audioFormat = 'webm';
+    console.log("Detected audio format:", audioFormat, "(content-type:", contentType, ")");
+
     // Convert to base64 efficiently for large files
     const audioBuffer = await audioBlob.arrayBuffer();
     const bytes = new Uint8Array(audioBuffer);
@@ -92,26 +103,19 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "google/gemini-2.5-pro",
+        temperature: 0,
+        top_p: 0.1,
         messages: [
           {
             role: "system",
-            content: "You are an expert transcription assistant. Your ONLY job is to transcribe the audio content word-for-word. Do NOT summarize, do NOT add commentary, do NOT make up content if you cannot hear clearly - just write '[inaudible]'. Transcribe EXACTLY what is said with proper punctuation and paragraph breaks."
+            content: "You are an expert transcription assistant. Your ONLY job is to transcribe the audio content word-for-word. Do NOT summarize, do NOT add commentary, do NOT invent words. If something is unclear, output [inaudible]. Keep speaker words verbatim with proper punctuation and paragraph breaks."
           },
           {
             role: "user",
             content: [
-              {
-                type: "text",
-                text: "Transcribe this audio recording:"
-              },
-              {
-                type: "audio",
-                audio: {
-                  data: audioBase64,
-                  format: "webm"
-                }
-              }
+              { type: "text", text: "Transcribe this audio recording accurately:" },
+              { type: "audio", audio: { data: audioBase64, format: audioFormat } }
             ]
           }
         ],
