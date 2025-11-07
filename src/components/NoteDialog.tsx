@@ -291,8 +291,14 @@ export const NoteDialog = ({ open, onOpenChange, note, onSave }: NoteDialogProps
   };
 
   const handleSave = async () => {
+    // Validation
     if (!title.trim()) {
       toast.error("Please enter a title");
+      return;
+    }
+
+    if (!content.trim() && !audioUrl && !transcription) {
+      toast.error("Please add some content, record audio, or add a transcription");
       return;
     }
 
@@ -311,6 +317,14 @@ export const NoteDialog = ({ open, onOpenChange, note, onSave }: NoteDialogProps
           .eq("id", note.id);
 
         if (error) throw error;
+        
+        // Track analytics
+        await supabase.from("usage_analytics").insert({
+          user_id: user?.id,
+          action_type: "note_updated",
+          metadata: { note_id: note.id, has_audio: !!audioUrl, has_transcription: !!transcription }
+        });
+        
         toast.success("Note updated!");
       } else {
         const { data: newNote, error } = await supabase
@@ -327,6 +341,13 @@ export const NoteDialog = ({ open, onOpenChange, note, onSave }: NoteDialogProps
           .single();
 
         if (error) throw error;
+
+        // Track analytics
+        await supabase.from("usage_analytics").insert({
+          user_id: user?.id,
+          action_type: "note_created",
+          metadata: { note_id: newNote.id, has_audio: !!audioUrl }
+        });
 
         // Transcribe if we have audio but no transcription
         if (audioUrl && !transcription && newNote) {
