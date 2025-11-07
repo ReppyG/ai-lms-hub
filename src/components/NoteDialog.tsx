@@ -3,11 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Mic, Square, Play, Pause, Loader2, Sparkles, FileText, Wand2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Mic, Square, Play, Pause, Loader2, Sparkles, FileText, Wand2, Settings } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { v4 as uuidv4 } from 'uuid';
+import { AudioWaveform } from "./AudioWaveform";
 
 interface Note {
   id: string;
@@ -37,6 +39,8 @@ export const NoteDialog = ({ open, onOpenChange, note, onSave }: NoteDialogProps
   const [transcription, setTranscription] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [recordingQuality, setRecordingQuality] = useState<"low" | "medium" | "high">("medium");
+  const [audioStream, setAudioStream] = useState<MediaStream | null>(null);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -61,8 +65,25 @@ export const NoteDialog = ({ open, onOpenChange, note, onSave }: NoteDialogProps
 
   const startRecording = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      // Quality settings: bitrate affects file size and quality
+      const qualitySettings = {
+        low: { audioBitsPerSecond: 32000 }, // ~240KB/min, good for speech
+        medium: { audioBitsPerSecond: 64000 }, // ~480KB/min, balanced
+        high: { audioBitsPerSecond: 128000 } // ~960KB/min, high quality
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      });
+      
+      setAudioStream(stream);
+
+      const options = qualitySettings[recordingQuality];
+      const mediaRecorder = new MediaRecorder(stream, options);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -76,6 +97,15 @@ export const NoteDialog = ({ open, onOpenChange, note, onSave }: NoteDialogProps
         const audioBlob = new Blob(audioChunksRef.current, { type: "audio/webm" });
         const recordingDuration = Math.floor((Date.now() - startTimeRef.current) / 1000);
         setDuration(recordingDuration);
+        
+        // Check file size before upload
+        const sizeMB = audioBlob.size / (1024 * 1024);
+        console.log(`Recording size: ${sizeMB.toFixed(2)}MB`);
+        
+        if (sizeMB > 25) {
+          toast.error("Recording too large (>25MB). Please use lower quality or shorter duration.");
+          return;
+        }
         
         // Upload to storage with UUID filename
         const fileName = `${user?.id}/${uuidv4()}.webm`;
@@ -101,15 +131,19 @@ export const NoteDialog = ({ open, onOpenChange, note, onSave }: NoteDialogProps
         }
 
         setAudioUrl(urlData.signedUrl);
+        setAudioStream(null);
+        
+        toast.success(`Recording saved (${sizeMB.toFixed(2)}MB, ${Math.floor(recordingDuration / 60)}:${(recordingDuration % 60).toString().padStart(2, '0')})`);
       };
 
       startTimeRef.current = Date.now();
       mediaRecorder.start();
       setIsRecording(true);
-      toast.success("Recording started");
+      toast.success(`Recording started (${recordingQuality} quality)`);
     } catch (error) {
       console.error("Recording error:", error);
       toast.error("Failed to start recording");
+      setAudioStream(null);
     }
   };
 
@@ -118,7 +152,7 @@ export const NoteDialog = ({ open, onOpenChange, note, onSave }: NoteDialogProps
       mediaRecorderRef.current.stop();
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
       setIsRecording(false);
-      toast.success("Recording stopped");
+      setAudioStream(null);
     }
   };
 
@@ -326,51 +360,87 @@ export const NoteDialog = ({ open, onOpenChange, note, onSave }: NoteDialogProps
             onChange={(e) => setTitle(e.target.value)}
           />
 
+          {/* Recording Quality Selector */}
+          {!isRecording && !audioUrl && (
+            <div className="flex gap-2 items-center p-3 bg-muted/30 rounded-lg">
+              <Settings className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Quality:</span>
+              <Select value={recordingQuality} onValueChange={(v: any) => setRecordingQuality(v)}>
+                <SelectTrigger className="w-32 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low (32kbps)</SelectItem>
+                  <SelectItem value="medium">Medium (64kbps)</SelectItem>
+                  <SelectItem value="high">High (128kbps)</SelectItem>
+                </SelectContent>
+              </Select>
+              <span className="text-xs text-muted-foreground">
+                {recordingQuality === "low" && "~240KB/min, best for speech"}
+                {recordingQuality === "medium" && "~480KB/min, balanced"}
+                {recordingQuality === "high" && "~960KB/min, high quality"}
+              </span>
+            </div>
+          )}
+
           {/* Recording Controls */}
-          <div className="flex gap-2 items-center p-4 bg-muted/50 rounded-lg">
-            {!isRecording && !audioUrl && (
-              <Button onClick={startRecording} variant="outline" size="sm">
-                <Mic className="w-4 h-4 mr-2" />
-                Start Recording
-              </Button>
-            )}
-
-            {isRecording && (
-              <Button onClick={stopRecording} variant="destructive" size="sm">
-                <Square className="w-4 h-4 mr-2" />
-                Stop Recording
-              </Button>
-            )}
-
-            {audioUrl && !isRecording && (
-              <>
-                <Button onClick={togglePlayback} variant="outline" size="sm">
-                  {isPlaying ? (
-                    <><Pause className="w-4 h-4 mr-2" /> Pause</>
-                  ) : (
-                    <><Play className="w-4 h-4 mr-2" /> Play Recording</>
-                  )}
+          <div className="space-y-3">
+            <div className="flex gap-2 items-center p-4 bg-muted/50 rounded-lg">
+              {!isRecording && !audioUrl && (
+                <Button onClick={startRecording} variant="outline" size="sm">
+                  <Mic className="w-4 h-4 mr-2" />
+                  Start Recording
                 </Button>
-                {duration > 0 && (
-                  <span className="text-sm text-muted-foreground">
-                    {Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}
-                  </span>
-                )}
-                {note && !transcription && (
-                  <Button 
-                    onClick={() => transcribeAudio(note.id)} 
-                    variant="outline" 
-                    size="sm"
-                    disabled={isTranscribing}
-                  >
-                    {isTranscribing ? (
-                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Transcribing...</>
+              )}
+
+              {isRecording && (
+                <Button onClick={stopRecording} variant="destructive" size="sm">
+                  <Square className="w-4 h-4 mr-2" />
+                  Stop Recording
+                </Button>
+              )}
+
+              {audioUrl && !isRecording && (
+                <>
+                  <Button onClick={togglePlayback} variant="outline" size="sm">
+                    {isPlaying ? (
+                      <><Pause className="w-4 h-4 mr-2" /> Pause</>
                     ) : (
-                      <><FileText className="w-4 h-4 mr-2" /> Transcribe</>
+                      <><Play className="w-4 h-4 mr-2" /> Play Recording</>
                     )}
                   </Button>
-                )}
-              </>
+                  {duration > 0 && (
+                    <span className="text-sm text-muted-foreground">
+                      {Math.floor(duration / 60)}:{(duration % 60).toString().padStart(2, '0')}
+                    </span>
+                  )}
+                  {note && !transcription && (
+                    <Button 
+                      onClick={() => transcribeAudio(note.id)} 
+                      variant="outline" 
+                      size="sm"
+                      disabled={isTranscribing}
+                    >
+                      {isTranscribing ? (
+                        <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Transcribing...</>
+                      ) : (
+                        <><FileText className="w-4 h-4 mr-2" /> Transcribe</>
+                      )}
+                    </Button>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Waveform Visualization */}
+            {(isRecording || audioUrl) && (
+              <AudioWaveform 
+                audioStream={audioStream}
+                audioUrl={audioUrl}
+                isRecording={isRecording}
+                isPlaying={isPlaying}
+                height={80}
+              />
             )}
           </div>
 
