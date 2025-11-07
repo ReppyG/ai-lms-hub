@@ -110,17 +110,17 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-pro",
-        temperature: 0.1, // small randomness helps ASR on noisy inputs
+        temperature: 0.0, // deterministic for exact transcription
         top_p: 0.1,
         messages: [
           {
             role: "system",
-            content: "You are an expert transcription assistant. Only transcribe the spoken words verbatim. Do NOT summarize, translate, or add commentary. If audio is unclear, output [inaudible]. If the audio seems cut off, output [truncated]. Preserve punctuation, capitalization, and paragraph breaks. Keep the original language."
+            content: "You are a precise audio transcription system. Your ONLY task is to transcribe the exact spoken words in the audio. Rules:\n1. Output ONLY the verbatim transcription - no introductions, explanations, or commentary\n2. Do NOT add any words, phrases, or interpretations that were not spoken\n3. Do NOT summarize, paraphrase, or translate\n4. If audio is completely silent, output: [no audio detected]\n5. For unclear words, use [inaudible] but ONLY when truly unclear\n6. Preserve natural pauses with punctuation\n7. Keep the speaker's exact wording and grammar, even if imperfect\n8. Do NOT add context, titles, or formatting beyond basic punctuation"
           },
           {
             role: "user",
             content: [
-              { type: "text", text: "Transcribe this audio recording accurately:" },
+              { type: "text", text: "Transcribe the following audio verbatim. Do not add any words that were not actually spoken:" },
               { type: "audio", audio: { data: audioBase64, format: audioFormat } }
             ]
           }
@@ -155,8 +155,25 @@ serve(async (req) => {
       throw new Error("No transcription in response");
     }
 
-    const transcription = transcriptionData.choices[0].message.content.trim();
-    console.log("Transcription length:", transcription.length, "characters");
+    let transcription = transcriptionData.choices[0].message.content.trim();
+    console.log("Transcription length (before cleanup):", transcription.length, "characters");
+
+    // Post-processing: Remove common AI hallucination patterns
+    const hallucinationPatterns = [
+      /^(Here is the transcription|The transcription is|Transcription):\s*/i,
+      /\[Note:.*?\]/g,
+      /\*\*.*?\*\*/g, // Remove markdown bold
+      /^#+\s+.*$/gm, // Remove markdown headers
+      /^(This recording|This audio|The speaker) (discusses?|talks? about|presents?|covers?).*$/gim,
+      /^(In conclusion|To summarize|Overall).*$/gim
+    ];
+
+    for (const pattern of hallucinationPatterns) {
+      transcription = transcription.replace(pattern, '');
+    }
+
+    transcription = transcription.trim();
+    console.log("Transcription length (after cleanup):", transcription.length, "characters");
 
     if (transcription.length < 3) {
       throw new Error("Transcription too short - audio may be silent or corrupted");

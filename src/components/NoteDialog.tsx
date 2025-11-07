@@ -185,7 +185,25 @@ export const NoteDialog = ({ open, onOpenChange, note, onSave }: NoteDialogProps
 
       console.log("Transcription successful:", data.transcription.substring(0, 100));
       setTranscription(data.transcription);
-      toast.success(`Transcription complete! (${data.length || data.transcription.length} characters)`);
+      
+      // Warn if transcription seems too perfect or formulaic (potential hallucination)
+      const suspiciousPatterns = [
+        /^(this|the|a)\s+(recording|audio|lecture|note)/i,
+        /discusses?|covers?|explains?|presents?/i,
+        /in conclusion|to summarize|overall/i
+      ];
+      
+      const hasSuspiciousPattern = suspiciousPatterns.some(pattern => 
+        pattern.test(data.transcription.substring(0, 200))
+      );
+      
+      if (hasSuspiciousPattern) {
+        toast.warning("Note: Transcription may contain AI interpretations. Please verify accuracy against the original audio.", {
+          duration: 6000
+        });
+      } else {
+        toast.success(`Transcription complete! (${data.length || data.transcription.length} characters)`);
+      }
     } catch (error: any) {
       console.error("Transcription failed:", error);
       const errorMsg = error?.message || "Failed to transcribe audio. Please try again.";
