@@ -125,6 +125,143 @@ export type Database = {
         }
         Relationships: []
       }
+      astra_config: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+          user_id: string
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+          user_id: string
+          value?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          user_id?: string
+          value?: Json
+        }
+        Relationships: []
+      }
+      astra_conversations: {
+        Row: {
+          archived: boolean
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived?: boolean
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      astra_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          role: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "astra_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "astra_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendar_events: {
+        Row: {
+          assignment_id: string | null
+          created_at: string
+          description: string | null
+          end_time: string
+          google_event_id: string
+          id: string
+          is_study_slot: boolean
+          location: string | null
+          start_time: string
+          summary: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assignment_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_time: string
+          google_event_id: string
+          id?: string
+          is_study_slot?: boolean
+          location?: string | null
+          start_time: string
+          summary: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assignment_id?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          google_event_id?: string
+          id?: string
+          is_study_slot?: boolean
+          location?: string | null
+          start_time?: string
+          summary?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       canvas_credentials: {
         Row: {
           api_token: string
@@ -295,6 +432,36 @@ export type Database = {
         }
         Relationships: []
       }
+      event_queue: {
+        Row: {
+          created_at: string
+          data: Json
+          event_type: string
+          id: string
+          is_read: boolean
+          priority: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          event_type: string
+          id?: string
+          is_read?: boolean
+          priority?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          event_type?: string
+          id?: string
+          is_read?: boolean
+          priority?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       generated_images: {
         Row: {
           conversation_id: string | null
@@ -332,6 +499,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gradebook_entries: {
+        Row: {
+          assignment_id: string
+          assignment_name: string
+          category: string | null
+          course_id: string
+          course_name: string
+          created_at: string
+          graded_at: string | null
+          id: string
+          percentage: number | null
+          points_earned: number | null
+          points_possible: number | null
+          submitted_at: string | null
+          updated_at: string
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          assignment_id: string
+          assignment_name: string
+          category?: string | null
+          course_id: string
+          course_name: string
+          created_at?: string
+          graded_at?: string | null
+          id?: string
+          percentage?: number | null
+          points_earned?: number | null
+          points_possible?: number | null
+          submitted_at?: string | null
+          updated_at?: string
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          assignment_id?: string
+          assignment_name?: string
+          category?: string | null
+          course_id?: string
+          course_name?: string
+          created_at?: string
+          graded_at?: string | null
+          id?: string
+          percentage?: number | null
+          points_earned?: number | null
+          points_possible?: number | null
+          submitted_at?: string | null
+          updated_at?: string
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -521,6 +742,39 @@ export type Database = {
           id?: string
           notes?: string | null
           topics_covered?: string[] | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      syllabus_chunks: {
+        Row: {
+          chunk_index: number
+          chunk_text: string
+          course_id: string
+          course_name: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          chunk_index: number
+          chunk_text: string
+          course_id: string
+          course_name: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          chunk_index?: number
+          chunk_text?: string
+          course_id?: string
+          course_name?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
           user_id?: string
         }
         Relationships: []
