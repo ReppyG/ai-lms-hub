@@ -19,6 +19,7 @@ import PremiumChat from "./pages/PremiumChat";
 import Workflows from "./pages/Workflows";
 import PremiumSettings from "./pages/PremiumSettings";
 import Analytics from "./pages/Analytics";
+import Astra from "./pages/Astra";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
             <Route path="/workflows" element={<Workflows />} />
             <Route path="/premium-settings" element={<PremiumSettings />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/astra" element={<Astra />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </CanvasProvider>

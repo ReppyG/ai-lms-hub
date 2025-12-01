@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.transcribe-audio]
 verify_jwt = true
+
+[functions.astra-agent]
+verify_jwt = true
